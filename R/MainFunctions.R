@@ -8,10 +8,26 @@ library(enviPat)
 
 # source('SubFunctions.R')
 
-#============
-# functions
-#============
 
+#' Check MS2 Spectra and Precursor Charge Information
+#'
+#' This function validates whether the input Spectra object contains MS2 scans
+#' and ensures that precursor charge information is available for downstream
+#' glycan composition analysis.
+#'
+#' @param ms_data A \code{Spectra} object (typically loaded from an .mzML file by Spectra::Spectra()).
+#'
+#' @return The function returns nothing if the check passes, but issues a success
+#'   message. It throws an error if MS2 spectra or charge states are missing.
+#'
+#' @importFrom Spectra filterMsLevel precursorCharge
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Assuming 'raw_data' is a Spectra object
+#' MsFileChecker(raw_data)
+#' }
 MsFileChecker = function(ms_data) {
   ms2_data = Spectra::filterMsLevel(ms_data, 2)
 
@@ -37,10 +53,7 @@ MsFileChecker = function(ms_data) {
 
 
 
-#====================
 # default setting
-#====================
-
 # define the glycan type
 glycan_type_default = 'N_glycan'    # 'O_glycan', 'GPI', 'GSL'
 # N_glycan library rules:
@@ -83,7 +96,7 @@ max_total_monosaccharides_num_default = 22
 
 # define the charge state range
 # currently only suppor the positive mode
-# min_charge_state <= charge_state ≤ max_charge_state
+# min_charge_state <= charge_state <= max_charge_state
 min_charge_state_default = 1
 max_charge_state_default = 3
 
@@ -97,18 +110,62 @@ max_charge_state_default = 3
 #                       Amidation	74.04801282
 #                       Methylation (CH2)	14.01565006414
 # )
-
-
-
-
-
-
-
-
-
-#==========================
-# Functions
-#==========================
+#' Construct a Glycan Theoretical Library
+#'
+#' This function generates a theoretical glycan library based on specified glycan types (N-glycan, GPI, etc.),
+#' monosaccharide ranges, adduct types, and derivatization labels. It calculates monoisotopic weights
+#' and m/z values for all possible combinations.
+#'
+#' @param glycan_type A character string specifying the glycan class.
+#'   Supported: \code{'N_glycan'}, \code{'GPI'}, \code{'GSL'}, \code{'O_glycan'}.
+#' @param min_charge_state Minimum charge state (positive integer).
+#' @param max_charge_state Maximum charge state (positive integer).
+#' @param monosaccharides_additional_customized_list A named numeric vector of
+#'   customized monosaccharides and their monoisotopic weights.
+#'   Example: \code{c(EtNP = 123.01, AHM = 161.05)}.
+#' @param min_num_monosaccharides_additional_customized_list Named vector for minimum counts
+#'   of customized monosaccharides.
+#'   Example: \code{c(EtNP = 0, AHM = 1)}.
+#' @param max_num_monosaccharides_additional_customized_list Named vector for maximum counts
+#'   of customized monosaccharides.
+#'   Example: \code{c(EtNP = 3, AHM = 1)}.
+#' @param adduct_type Character vector of supported adducts (e.g., \code{c('H', 'Na', 'K')}).
+#' @param adduct_monoisotopic_customized_list Named numeric vector for user-defined adduct weights.
+#' @param adduct_monoisotopic_customized_charge_state_list Named numeric vector for
+#'   user-defined adduct charge states.
+#' @param derivatization_type Derivatization label type (e.g., \code{'ProA'}, \code{'AB'}, \code{'PA'}).
+#' @param derivatization_monoisotopic_weight_customized Numeric weight for a custom label.
+#' @param min_Hex_num,max_Hex_num Min/Max number of Hexose (Hex).
+#' @param min_HexNAc_num,max_HexNAc_num Min/Max number of N-Acetylhexosamine (HexNAc).
+#' @param min_dHex_num,max_dHex_num Min/Max number of Deoxyhexose (dHex).
+#' @param min_Neu5Ac_num,max_Neu5Ac_num Min/Max number of N-Acetylneuraminic acid (Neu5Ac).
+#' @param min_HexA_num,max_HexA_num Min/Max number of Hexuronic acid (HexA).
+#' @param min_Neu5Gc_num,max_Neu5Gc_num Min/Max number of N-Glycolylneuraminic acid (Neu5Gc).
+#' @param min_Pentose_num,max_Pentose_num Min/Max number of Pentose.
+#' @param min_KDN_num,max_KDN_num Min/Max number of 2-keto-3-deoxy-D-glycero-D-galacto-nononic acid (KDN).
+#' @param min_total_monosaccharides_num,max_total_monosaccharides_num Range for the sum of all monosaccharides.
+#'
+#' @return A list containing five elements:
+#' \itemize{
+#'   \item \code{monosaccharides_combination}: Data frame of valid monosaccharide compositions.
+#'   \item \code{adduct_combination}: Data frame of valid adduct combinations and total charges.
+#'   \item \code{monosaccharides_adduct_num}: Matrix of counts for each component.
+#'   \item \code{monosaccharides_adduct_weight}: Matrix of weight contributions.
+#'   \item \code{glycan_monosaccharides_library}: The full library with monoisotopic weights and m/z.
+#' }
+#'
+#' @importFrom dplyr filter across where if_else mutate select bind_cols
+#' @importFrom tidyr crossing
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' library = ConstructGlycanLibrary(
+#'   glycan_type = 'N_glycan',
+#'   min_Hex_num = 3, max_Hex_num = 10,
+#'   adduct_type = c('H', 'Na')
+#' )
+#' }
 ConstructGlycanLibrary = function(glycan_type = glycan_type_default,
                                  min_charge_state = min_charge_state_default, max_charge_state = max_charge_state_default,
 
@@ -293,7 +350,7 @@ ConstructGlycanLibrary = function(glycan_type = glycan_type_default,
     if (abs(monosaccharides_list[paste(std_monos)] - standard_monosaccharides_list[paste(std_monos)]) >= 0.01) {
 
       stop(paste("Monoisotopic weight for monosaccharide",
-                 sprintf("'%s'", std_monos), " differs from the reference by ≥ 0.01 Da."),
+                 sprintf("'%s'", std_monos), " differs from the reference by >= 0.01 Da."),
            call. = FALSE)
 
     }
@@ -452,7 +509,7 @@ ConstructGlycanLibrary = function(glycan_type = glycan_type_default,
     }
 
     monosaccharides_combos = dplyr::filter(monosaccharides_combos,
-                                           rowSums(dplyr::across(where(is.numeric))) >= min_total_monosaccharides_num & rowSums(dplyr::across(where(is.numeric))) <= max_total_monosaccharides_num)
+                                           rowSums(dplyr::across(dplyr::where(is.numeric))) >= min_total_monosaccharides_num & rowSums(dplyr::across(dplyr::where(is.numeric))) <= max_total_monosaccharides_num)
 
     # apply N-glycan rules
     if ('Neu5Gc' %in% colnames(monosaccharides_combos)) {
@@ -506,17 +563,17 @@ ConstructGlycanLibrary = function(glycan_type = glycan_type_default,
     }
 
     monosaccharides_combos = dplyr::filter(monosaccharides_combos,
-                                           rowSums(dplyr::across(where(is.numeric))) >= min_total_monosaccharides_num & rowSums(dplyr::across(where(is.numeric))) <= max_total_monosaccharides_num)
+                                           rowSums(dplyr::across(dplyr::where(is.numeric))) >= min_total_monosaccharides_num & rowSums(dplyr::across(dplyr::where(is.numeric))) <= max_total_monosaccharides_num)
 
     # apply GPI rules
     if ('Neu5Gc' %in% colnames(monosaccharides_combos)) {
-      monosaccharides_combos = dplyr::filter(monosaccharides_combos, dplyr::if_else(Neu5Ac > 0 | Neu5Gc > 0, Hex >= 4, TRUE)) %>%
-        dplyr::filter(dplyr::if_else(EtNP > 0, Hex >= EtNP, TRUE)) %>%
+      monosaccharides_combos = dplyr::filter(monosaccharides_combos, dplyr::if_else(Neu5Ac > 0 | Neu5Gc > 0, Hex >= 4, TRUE)) |>
+        dplyr::filter(dplyr::if_else(EtNP > 0, Hex >= EtNP, TRUE)) |>
         dplyr::filter(dplyr::if_else(Hex == 5, HexNAc == 1, TRUE))
 
     } else {
-      monosaccharides_combos = dplyr::filter(monosaccharides_combos, dplyr::if_else(Neu5Ac > 0, Hex >= 4, TRUE)) %>%
-        dplyr::filter(dplyr::if_else(EtNP > 0, Hex >= EtNP, TRUE)) %>%
+      monosaccharides_combos = dplyr::filter(monosaccharides_combos, dplyr::if_else(Neu5Ac > 0, Hex >= 4, TRUE)) |>
+        dplyr::filter(dplyr::if_else(EtNP > 0, Hex >= EtNP, TRUE)) |>
         dplyr::filter(dplyr::if_else(Hex == 5, HexNAc == 1, TRUE))
     }
 
@@ -666,6 +723,17 @@ ConstructGlycanLibrary = function(glycan_type = glycan_type_default,
 
 
 
+
+
+
+
+
+
+
+
+
+
+
 # filter low quality MS1 and MS2 spectrums based on Spectra::spectraVariables()
 # filter_method_ms1, filter_method_ms2: mean_sd, quantile_prob, start_end
 # attention, for the 'mean_sd', it gives the ranges from the jump point to the max of that varible
@@ -681,8 +749,6 @@ ConstructGlycanLibrary = function(glycan_type = glycan_type_default,
 # [26] "mergedResultScanNum"      "mergedResultStartScanNum" "mergedResultEndScanNum"   "injectionTime"            "filterString"
 # [31] "spectrumId"               "ionMobilityDriftTime"     "scanWindowLowerLimit"     "scanWindowUpperLimit"
 
-
-
 filter_method_ms1_default = c(peaksCount = 'mean_sd', totIonCurrent = 'quantile_prob', rtime = 'start_end')
 filter_method_ms2_default = c(peaksCount = 'quantile_prob', totIonCurrent = 'quantile_prob', rtime = 'start_end')
 
@@ -694,6 +760,60 @@ threshold_ms2_default = NULL
 plot_option_default = T
 
 
+
+#' Quality Control Filtering for MS1 and MS2 Spectra
+#'
+#' This function filters raw mass spectrometry data by analyzing spectra variables
+#' (such as peak count, total ion current, and retention time). It supports three
+#' different filtering logic modes and provides visual feedback of the filtering process.
+#'
+#' @param ms_data A \code{Spectra} object containing the mass spectrometry data.
+#' @param filter_method_ms1 A named character vector specifying the filtering
+#'   method for MS1. Names must match \code{Spectra::spectraVariables(ms_data)}.
+#'   Methods: \code{'mean_sd'}, \code{'quantile_prob'}, or \code{'start_end'}.
+#' @param filter_method_ms2 A named character vector specifying the filtering
+#'   method for MS2. Similar to \code{filter_method_ms1}.
+#' @param threshold_ms1 A named list of thresholds for MS1.
+#'   \itemize{
+#'     \item For \code{'mean_sd'}: A single numeric value (n times SD).
+#'     \item For \code{'quantile_prob'}: A numeric vector of length 2 (lower and upper probabilities).
+#'     \item For \code{'start_end'}: A numeric vector of length 2 (min and max values).
+#'   }
+#' @param threshold_ms2 A named list of thresholds for MS2. Similar to \code{threshold_ms1}.
+#' @param plot_option Logical, if \code{TRUE} (default), returns diagnostic plots
+#'   showing the distribution of variables before and after filtering.
+#'
+#' @return A list containing:
+#' \itemize{
+#'   \item \code{filtered_ms_data}: The filtered \code{Spectra} object.
+#'   \item \code{pic_ms_varibles_unfiltered}: A list of ggplot objects showing raw distributions.
+#'   \item \code{pic_ms_varibles_filtered}: (Optional) A list of ggplot objects showing distributions after filtering.
+#' }
+#'
+#' @details
+#' The function calculates thresholds dynamically if not provided.
+#' For example, \code{'mean_sd'} identifies a "jump point" based on mean and standard deviation
+#' to remove low-quality scans at the beginning or end of an LC-MS run.
+#'
+#' @importFrom Spectra spectraVariables filterMsLevel
+#' @importFrom utils capture.output
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Example usage:
+#' filter_methods <- c(peaksCount = 'mean_sd', totIonCurrent = 'quantile_prob')
+#' thresholds <- list(peaksCount = 2, totIonCurrent = c(0.1, 0.9))
+#'
+#' qc_result <- SpectrumQcFilter(
+#'   ms_data = raw_spectra,
+#'   filter_method_ms1 = filter_methods,
+#'   threshold_ms1 = thresholds
+#' )
+#'
+#' # Access filtered data
+#' clean_data <- qc_result$filtered_ms_data
+#' }
 SpectrumQcFilter = function(ms_data,
                          filter_method_ms1 = filter_method_ms1_default,
                          filter_method_ms2 = filter_method_ms2_default,
@@ -808,9 +928,9 @@ SpectrumQcFilter = function(ms_data,
   message(
     paste0(
       "Threshold for MS1 spectrum: \n",
-      paste(capture.output(print(threshold_value_ms1)), collapse = "\n"), "\n",
+      paste(utils::capture.output(print(threshold_value_ms1)), collapse = "\n"), "\n",
       "Threshold for MS2 spectrum: \n",
-      paste(capture.output(print(threshold_value_ms2)), collapse = "\n"), "\n",
+      paste(utils::capture.output(print(threshold_value_ms2)), collapse = "\n"), "\n",
       "Original MS1 spectrum number: ", length(Spectra::filterMsLevel(ms_data, 1)),
       "  Filtered MS1 spectrum number: ", length(Spectra::filterMsLevel(ms_clean, 1)), "\n",
       "Original MS2 spectrum number: ", length(Spectra::filterMsLevel(ms_data, 2)),
@@ -831,6 +951,15 @@ SpectrumQcFilter = function(ms_data,
   }
 
 }
+
+
+
+
+
+
+
+
+
 
 
 
@@ -874,6 +1003,61 @@ ms2_denoising_detail_default = list(spline_segmentation_regression = list(spar_s
                                 fixed_value = 30 # define the noise threshold
 )
 
+
+
+
+#' MS2 Spectrum Denoising using Regression or Thresholding Methods
+#'
+#' This function performs denoising on MS2 spectra using various methods, including
+#' spline regression, segmented regression, and adaptive thresholding. It is
+#' specifically designed to distinguish between complete and incomplete glycan
+#' fragmentation to apply the most appropriate denoising strategy.
+#'
+#' @param ms_data A \code{Spectra} object containing MS1 and MS2 data.
+#' @param ms2_spectrum_transform_method Character string or function.
+#'   Methods include \code{'log2_transform'} (default), \code{'asinh_transform'},
+#'   or \code{'non_transform'}. A custom function can also be provided.
+#' @param ms2_denoising_method Character string specifying the denoising logic.
+#'   Options: \code{'spline_segmentation_regression'}, \code{'spline_regression'},
+#'   \code{'segmentation_regression'}, \code{'quantile_prob'}, or \code{'fixed_value'}.
+#' @param ms2_denoising_detail A nested list containing parameters for the chosen
+#'   denoising method. See details for default values and structure.
+#'
+#' @details
+#' The \code{'spline_segmentation_regression'} method automatically detects the
+#' fragmentation state. If fragmentation is incomplete (indicated by regular
+#' m/z spacing of top peaks), spline regression is used. Otherwise, segmented
+#' regression is applied.
+#'
+#'
+#'
+#' @return A list containing:
+#' \itemize{
+#'   \item \code{denoising_regression_info}: A data frame (\code{tibble}) with
+#'     regression statistics and the calculated threshold for each MS2 spectrum.
+#'   \item \code{denoised_ms_data}: A \code{Spectra} object with the denoising
+#'     processing added via \code{Spectra::addProcessing}.
+#' }
+#'
+#' @importFrom Spectra filterMsLevel peaksData addProcessing
+#' @importFrom dplyr distinct bind_rows
+#' @importFrom utils txtProgressBar setTxtProgressBar
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Use default settings (Spline + Segmentation)
+#' result <- MS2SpectrumDenoising(ms_data = raw_data)
+#'
+#' # Use a fixed intensity threshold for denoising
+#' custom_detail <- ms2_denoising_detail_default
+#' custom_detail$fixed_value <- 100
+#' result_fixed <- MS2SpectrumDenoising(
+#'   ms_data = raw_data,
+#'   ms2_denoising_method = 'fixed_value',
+#'   ms2_denoising_detail = custom_detail
+#' )
+#' }
 MS2SpectrumDenoising = function(ms_data,
                                 ms2_spectrum_transform_method = 'log2_transform',
                                 ms2_denoising_method = 'spline_segmentation_regression',
@@ -914,13 +1098,13 @@ MS2SpectrumDenoising = function(ms_data,
 
   ms2_spectra_num = length(spectra_data_ms2)
 
-  pb = txtProgressBar(min = 0, max = ms2_spectra_num, style = 3)
+  pb = utils::txtProgressBar(min = 0, max = ms2_spectra_num, style = 3)
   on.exit(close(pb))
 
   for (i in seq_along(spectra_data_ms2)) {
 
     # progress bar
-    setTxtProgressBar(pb, i)
+    utils::setTxtProgressBar(pb, i)
 
     current_ms2_peaks_data = as.data.frame(all_ms2_peaks_data[[i]])
     current_ms2_peaks_data_distinct = dplyr::distinct(current_ms2_peaks_data, intensity, .keep_all = TRUE)
@@ -1054,6 +1238,20 @@ MS2SpectrumDenoising = function(ms_data,
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # define the glycan diagnostics fragments
 diagnostic_frags_list_default = c(HexNAc =         204.08667,   # HexNAc
                                  HexNAc_ProA =        441.2708,    # HexNAc + ProA
@@ -1072,6 +1270,61 @@ diagnostic_frags_list_default = c(HexNAc =         204.08667,   # HexNAc
 # diagnostic_frags_exp = 'HexNAc & (HexNAc_ProA | dHex_HexNAc_ProA) & !Hex_HexNAc_ProA'
 # diagnostic_frags_exp = '(HexNAc_ProA | dHex_HexNAc_ProA) & !Hex_HexNAc_ProA'
 
+
+
+
+#' Identify Glycan Spectra via Diagnostic Fragment Logic
+#'
+#' This function screens MS2 spectra for specific glycan diagnostic ions. It allows
+#' users to define complex matching logic (e.g., AND, OR, NOT) to filter spectra
+#' potentially containing glycans or specific glycan motifs.
+#'
+#' @param ms_data A \code{Spectra} object (typically denoised/processed) used for fragment screening.
+#' @param ms_data_raw A \code{Spectra} object (typically raw) from which matched spectra will be extracted.
+#' @param diagnostic_frags_list A named numeric vector of target m/z values for diagnostic fragments.
+#'   Defaults to \code{diagnostic_frags_list_default}.
+#' @param diagnostic_frags_exp A character string representing a logical expression.
+#'   Names in this expression must match the names in \code{diagnostic_frags_list}.
+#'   Example: \code{"HexNAc & (HexNAc_ProA | dHex_HexNAc_ProA) & !Hex_HexNAc_ProA"}.
+#' @param ppm_val Numeric. The mass tolerance in parts-per-million (ppm) for matching fragments.
+#'
+#' @details
+#' The function evaluates the \code{diagnostic_frags_exp} by checking the presence of each
+#' fragment in the \code{diagnostic_frags_list} within the specified \code{ppm_val} tolerance.
+#' If a match is found, the function also identifies the preceding MS1 scan for that MS2 spectrum.
+#'
+#'
+#'
+#' @return A list containing:
+#' \itemize{
+#'   \item \code{spectrum_info}: A data frame containing metadata for matched MS1 and MS2 scans,
+#'     including boolean flags (\code{_flag}) for the presence of each diagnostic fragment.
+#'   \item \code{selected_ms_data}: A \code{Spectra} object containing only the identified
+#'     MS1 and MS2 spectra.
+#' }
+#'
+#' @importFrom Spectra filterMsLevel peaksData rtime
+#' @importFrom dplyr bind_rows distinct
+#' @importFrom utils txtProgressBar setTxtProgressBar
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Define custom diagnostic fragments
+#' my_frags <- c(HexNAc = 204.0867, Neu5Ac = 291.0954)
+#'
+#' # Filter spectra that MUST have HexNAc AND Neu5Ac
+#' result <- FindSpectrumByDiagnosticFragments(
+#'   ms_data = processed_data,
+#'   ms_data_raw = raw_data,
+#'   diagnostic_frags_list = my_frags,
+#'   diagnostic_frags_exp = "HexNAc & Neu5Ac",
+#'   ppm_val = 20
+#' )
+#'
+#' # View matched spectrum IDs
+#' print(result$spectrum_info$ms2_spectrum_id)
+#' }
 FindSpectrumByDiagnosticFragments = function(ms_data, ms_data_raw, diagnostic_frags_list = diagnostic_frags_list_default,
                                           diagnostic_frags_exp, ppm_val) {
 
@@ -1081,7 +1334,7 @@ FindSpectrumByDiagnosticFragments = function(ms_data, ms_data_raw, diagnostic_fr
   ms2_spectra_num = length(spectra_data_ms2)
 
 
-  pb = txtProgressBar(min = 0, max = ms2_spectra_num, style = 3)
+  pb = utils::txtProgressBar(min = 0, max = ms2_spectra_num, style = 3)
   on.exit(close(pb))
 
   res_list = list()
@@ -1091,7 +1344,7 @@ FindSpectrumByDiagnosticFragments = function(ms_data, ms_data_raw, diagnostic_fr
 
   for (i in seq_along(spectra_data_ms2)) {
     # progress bar
-    setTxtProgressBar(pb, i)
+    utils::setTxtProgressBar(pb, i)
 
     peaks_matrix = all_ms2_peaks_data[[i]]
     mz_values = peaks_matrix[, "mz"]
@@ -1183,6 +1436,24 @@ FindSpectrumByDiagnosticFragments = function(ms_data, ms_data_raw, diagnostic_fr
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # 'spectrum_info': the output dataframe of FindSpectrumByDiagnosticFragments() fucntion,
 # could also be dataframe contains such columns:
 # "ms1_spectrum_id", "ms1_retention_time", "ms2_spectrum_id",
@@ -1191,6 +1462,50 @@ FindSpectrumByDiagnosticFragments = function(ms_data, ms_data_raw, diagnostic_fr
 precursor_mz_ppm_default = 150
 max_possible_candidates_num_default = 5
 
+
+#' Match MS2 Precursors to Potential Glycan Compositions
+#'
+#' This function takes the identified glycan spectra and searches a glycan library
+#' for potential compositions based on the precursor m/z and charge state. It
+#' calculates mass errors in ppm and returns the top candidates for each spectrum.
+#'
+#' @param spectrum_info A data frame containing spectrum metadata. Required columns
+#'   include: \code{"ms2_spectrum_id"}, \code{"ms2_precursor_charge"}, and \code{"ms2_precursor_mz"}.
+#'   Usually the output from \code{FindSpectrumByDiagnosticFragments}.
+#' @param glycan_lib A data frame acting as the reference glycan library. It must contain
+#'   at least: \code{total_charge}, \code{glycan_monoisotopic_mz}, and composition details.
+#' @param max_precursor_mz_ppm Numeric. The maximum allowable mass tolerance in ppm
+#'   between the observed precursor and the library entry. Default is 150.
+#' @param max_possible_candidates_num Numeric. The maximum number of top-ranked
+#'   (by lowest ppm error) candidates to return for each MS2 spectrum. Default is 5.
+#'
+#' @details
+#' The function filters the library by charge state, calculates the ppm error for
+#' each entry, and retains candidates within the specified tolerance. Results are
+#' merged back with the original \code{spectrum_info} for easy downstream analysis.
+#'
+#'
+#'
+#' @return A data frame (\code{tibble}) containing the original spectrum information
+#'   joined with matched glycan candidates, their calculated \code{ppm_error},
+#'   and their chemical compositions.
+#'
+#' @importFrom dplyr filter mutate arrange slice_head bind_rows left_join
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Assuming you have a glycan library and spectrum info
+#' candidates <- FindPossibleGlycanComposition(
+#'   spectrum_info = likely_glycan_spectrum_info,
+#'   glycan_lib = N_glycan_library,
+#'   max_precursor_mz_ppm = 50,
+#'   max_possible_candidates_num = 3
+#' )
+#'
+#' # Inspect the top matches for the first spectrum
+#' head(candidates)
+#' }
 FindPossibleGlycanComposition = function(spectrum_info, glycan_lib,
                                          max_precursor_mz_ppm = precursor_mz_ppm_default,
                                          max_possible_candidates_num = max_possible_candidates_num_default) {
@@ -1218,10 +1533,10 @@ FindPossibleGlycanComposition = function(spectrum_info, glycan_lib,
     precursor_charge = all_precursor_charge[i]
     precursor_ms2_id = all_ms2_id[i]
 
-    all_possible_glycan_comp = glycan_lib %>%
-      dplyr::filter(total_charge == precursor_charge) %>%
-      dplyr::mutate(ppm_error = abs(glycan_monoisotopic_mz - precursor_mz) / glycan_monoisotopic_mz * 1e6) %>%
-      dplyr::filter(ppm_error <= max_precursor_mz_ppm) %>%
+    all_possible_glycan_comp = glycan_lib |>
+      dplyr::filter(total_charge == precursor_charge) |>
+      dplyr::mutate(ppm_error = abs(glycan_monoisotopic_mz - precursor_mz) / glycan_monoisotopic_mz * 1e6) |>
+      dplyr::filter(ppm_error <= max_precursor_mz_ppm) |>
       dplyr::arrange(ppm_error)
 
 
@@ -1242,8 +1557,8 @@ FindPossibleGlycanComposition = function(spectrum_info, glycan_lib,
 
     if (nrow(all_possible_glycan_comp) > 0) {
 
-      top_glycan_candidate = all_possible_glycan_comp %>%
-        dplyr::slice_head(n = max_possible_candidates_num) %>%
+      top_glycan_candidate = all_possible_glycan_comp |>
+        dplyr::slice_head(n = max_possible_candidates_num) |>
         dplyr::mutate(ms2_spectrum_id = precursor_ms2_id)
 
       possible_glycan_list[[length(possible_glycan_list) + 1]] = top_glycan_candidate
@@ -1259,7 +1574,7 @@ FindPossibleGlycanComposition = function(spectrum_info, glycan_lib,
 
   }
 
-  candidate_glycan_list = dplyr::bind_rows(possible_glycan_list) %>%
+  candidate_glycan_list = dplyr::bind_rows(possible_glycan_list) |>
     dplyr::left_join(spectrum_info, by = c('ms2_spectrum_id' = 'ms2_spectrum_id'))
 
 
@@ -1428,7 +1743,7 @@ FindPossibleGlycanComposition = function(spectrum_info, glycan_lib,
 #
 #     for (i in seq_along(ms2_data_filtered)) {
 #       # progress bar
-#       setTxtProgressBar(txtProgressBar(min = 0, max = length(ms2_data_filtered), style = 3), i)
+#       utils::setTxtProgressBar(utils::txtProgressBar(min = 0, max = length(ms2_data_filtered), style = 3), i)
 #       #print(i)
 #
 #       current_spectra_ms2 = as.data.frame(Spectra::peaksData(ms2_data_filtered)[[i]])
@@ -1494,6 +1809,28 @@ FindPossibleGlycanComposition = function(spectrum_info, glycan_lib,
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 molecular_formula_list_default = c(
   # monosaccharides
   Hex = 'C6H10O5',
@@ -1521,7 +1858,6 @@ molecular_formula_list_default = c(
 
 )
 
-
 molecular_formula_name_default = c('Hex', 'HexNAc', 'dHex', 'Neu5Ac', 'HexA', 'Neu5Gc',
                            'H', 'Na', 'K',
                            'ProA')
@@ -1534,7 +1870,61 @@ threshold_iso_probalility_default = 0.01
 bin_width_default = 0.05
 
 
-# check the monoisotopics distribution
+
+
+#' Validate Glycan Compositions using MS1 Isotope Pattern Matching
+#'
+#' This function validates candidate glycan compositions by comparing their theoretical
+#' isotopic distributions with the observed MS1 spectra. It calculates a similarity
+#' score (cosine score) between the predicted and actual isotope patterns to
+#' identify the most likely glycan composition for each MS2 spectrum.
+#'
+#' @param spectrum_matching_info A data frame containing initial matching results.
+#'   Required columns: \code{"ms1_spectrum_id"}, \code{"ms2_spectrum_id"}, and
+#'   \code{"ms2_precursor_mz"}. Typically the output from \code{FindPossibleGlycanComposition}.
+#' @param molecular_names A character vector of names from \code{molecular_formula_list}
+#'   to be used for formula calculation (e.g., sugars and adducts).
+#' @param molecular_formula_list A named character vector of molecular formulas for
+#'   monosaccharides, labels, and adducts.
+#' @param ms_data A \code{Spectra} object containing the raw MS1 spectra.
+#' @param ms1_window_left Numeric. The left (lower) m/z offset from the precursor
+#'   m/z to define the MS1 isolation window for isotope pattern extraction.
+#' @param ms1_window_right Numeric. The right (upper) m/z offset from the precursor
+#'   m/z to define the MS1 isolation window.
+#' @param bin_width Numeric. The bin width for m/z discretization during cosine
+#'   score calculation.
+#' @param threshold_iso_probalility Numeric. The minimum relative abundance threshold
+#'   for theoretical isotopic peaks to be included in the comparison. Default is 0.01.
+#'
+#' @details
+#' For each MS2 spectrum with multiple potential glycan candidates, the function
+#' retrieves the corresponding MS1 scan. It then simulates the theoretical isotope
+#' distribution based on the candidate's molecular formula and compares it to the
+#' experimental peaks within the specified m/z window.
+#'
+#'
+#'
+#' @return A data frame (\code{tibble}) updated with isotope validation metrics.
+#'   Candidates with higher cosine scores represent better matches to the
+#'   experimental data.
+#'
+#' @importFrom Spectra peaksData
+#' @importFrom dplyr filter bind_rows
+#' @importFrom stats setNames
+#' @importFrom utils txtProgressBar setTxtProgressBar
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Validate candidates using a 1 Da window on the left and 2 Da on the right
+#' validated_results <- ValidateGlycanCompositionByIsotopePattern(
+#'   spectrum_matching_info = candidate_list,
+#'   ms_data = raw_spectra,
+#'   ms1_window_left = 1.0,
+#'   ms1_window_right = 2.5,
+#'   bin_width = 0.05
+#' )
+#' }
 ValidateGlycanCompositionByIsotopePattern = function(spectrum_matching_info,
 
                                      molecular_names = molecular_formula_name_default,
@@ -1558,7 +1948,7 @@ ValidateGlycanCompositionByIsotopePattern = function(spectrum_matching_info,
 
   ms2_id_all = unique(spectrum_matching_info[['ms2_spectrum_id']])
 
-  ms_id_map = setNames(seq_along(ms_data), ms_data$spectrumId)
+  ms_id_map = stats::setNames(seq_along(ms_data), ms_data$spectrumId)
 
 
   ms2_id_num = length(ms2_id_all)
@@ -1566,7 +1956,7 @@ ValidateGlycanCompositionByIsotopePattern = function(spectrum_matching_info,
 
 
   # progress bar
-  pb = txtProgressBar(min = 0, max = ms2_id_num, style = 3)
+  pb = utils::txtProgressBar(min = 0, max = ms2_id_num, style = 3)
   on.exit(close(pb))
 
   res_list = list()
@@ -1574,7 +1964,7 @@ ValidateGlycanCompositionByIsotopePattern = function(spectrum_matching_info,
   for (i in seq_along(ms2_id_all)) {
 
     # progress bar
-    setTxtProgressBar(pb, i)
+    utils::setTxtProgressBar(pb, i)
 
     current_ms2_id = ms2_id_all[i]
 
