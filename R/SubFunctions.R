@@ -131,38 +131,38 @@ FindSplineSpar = function(x, y,
   if (plot) {
     base_plot <- function(data, mapping, title, y_lab) {
       ggplot2::ggplot(data, mapping) +
-        geom_point(color = "black") +
-        geom_vline(xintercept = best_spar, linetype = "dashed", color = "red") +
-        theme_minimal() +
-        labs(title = title, x = "spar", y = y_lab)
+        ggplot2::geom_point(color = "black") +
+        ggplot2::geom_vline(xintercept = best_spar, linetype = "dashed", color = "red") +
+        ggplot2::theme_minimal() +
+        ggplot2::labs(title = title, x = "spar", y = y_lab)
     }
 
     # RMSE
     RMSE_plot = base_plot(data = spar_data_info,
-                          mapping = aes(x=spar, y=RMSE),
+                          mapping = ggplot2::aes(x=spar, y=RMSE),
                           title = "RMSE",
                           y_lab = "RMSE")
     # CV
     if (!all(is.na(spar_data_info$CV))) {
 
       cv_plot = base_plot(data = spar_data_info,
-                          mapping = aes(x=spar, y=CV),
+                          mapping = ggplot2::aes(x=spar, y=CV),
                           title = "Leave-one-out cross-validation (LOOCV)",
                           y_lab = "LOOCV")
     } else {
 
       cv_plot = ggplot2::ggplot() +
-        annotate("text", x=0.5, y=0.5, label="CV not computed") + theme_void()
+        ggplot2::annotate("text", x=0.5, y=0.5, label="CV not computed") + ggplot2::theme_void()
     }
     # D2
     D2_plot = base_plot(data = spar_data_info,
-                         mapping = aes(x=spar, y=D2),
+                         mapping = ggplot2::aes(x=spar, y=D2),
                          #title = "D2 smoothness (∫(f'' )^2)",
                         title = "D2 smoothness",
                         y_lab = "D2_smoothness")
     # D1
     D1_plot = base_plot(data = spar_data_info,
-                         mapping = aes(x=spar, y=D1),
+                         mapping = ggplot2::aes(x=spar, y=D1),
                          title = "D1 total variation",
                          y_lab = "D1_total_var")
 
@@ -323,17 +323,17 @@ PlotUnfilteredMsVaribles = function(msdata, ms_level, filter_method) {
     df_raw = data.frame(index = seq_along(ms_v), value = ms_v)
     df_sorted = data.frame(index = seq_along(ms_v), value = sort(ms_v))
 
-    p1 = ggplot2::ggplot(df_raw, aes(x = index, y = value)) +
-      geom_col(width = 1, fill = "black") +
-      labs(x = "Index", y = i,  title = paste0('MS',ms_level , '_', i)) +
-      theme_classic() +
-      theme(legend.position = "none", plot.title = element_text(size = 12))
+    p1 = ggplot2::ggplot(df_raw, ggplot2::aes(x = index, y = value)) +
+      ggplot2::geom_col(width = 1, fill = "black") +
+      ggplot2::labs(x = "Index", y = i,  title = paste0('MS',ms_level , '_', i)) +
+      ggplot2::theme_classic() +
+      ggplot2::theme(legend.position = "none", plot.title = ggplot2::element_text(size = 12))
 
-    p2 = ggplot2::ggplot(df_sorted, aes(x = index, y = value)) +
-      geom_col(width = 1, fill = "black") +
-      labs(x = "Sorted_index", y = i,  title = paste0('MS',ms_level , '_', i, '_sorted')) +
-      theme_classic() +
-      theme(legend.position = "none", plot.title = element_text(size = 12))
+    p2 = ggplot2::ggplot(df_sorted, ggplot2::aes(x = index, y = value)) +
+      ggplot2::geom_col(width = 1, fill = "black") +
+      ggplot2::labs(x = "Sorted_index", y = i,  title = paste0('MS',ms_level , '_', i, '_sorted')) +
+      ggplot2::theme_classic() +
+      ggplot2::theme(legend.position = "none", plot.title = ggplot2::element_text(size = 12))
 
     pic_ms_var[[paste0('MS',ms_level , '_', i)]] = p1 / p2
 
@@ -378,23 +378,23 @@ PlotFilteredMsVaribles = function(msdata, ms_level, filter_threshold_value) {
       )
 
 
-    p1 = ggplot2::ggplot(df_raw, aes(x = index, y = value, fill = status)) +
-      geom_col(width = 1) +
-      scale_fill_manual(values = c("keep" = "black", "filtered" = "grey"),
+    p1 = ggplot2::ggplot(df_raw, ggplot2::aes(x = index, y = value, fill = status)) +
+      ggplot2::geom_col(width = 1) +
+      ggplot2::scale_fill_manual(values = c("keep" = "black", "filtered" = "grey"),
                         name = "Status"
                         ) +
-      labs(x = "Index", y = i,  title = paste0('MS',ms_level , '_', i)) +
-      theme_classic() +
-      theme(legend.position = "right", plot.title = element_text(size = 12))
+      ggplot2::labs(x = "Index", y = i,  title = paste0('MS',ms_level , '_', i)) +
+      ggplot2::theme_classic() +
+      ggplot2::theme(legend.position = "right", plot.title = ggplot2::element_text(size = 12))
 
-    p2 = ggplot2::ggplot(df_sorted, aes(x = index, y = value, fill = status)) +
-      geom_col(width = 1) +
-      scale_fill_manual(values = c("keep" = "black", "filtered" = "grey"),
+    p2 = ggplot2::ggplot(df_sorted, ggplot2::aes(x = index, y = value, fill = status)) +
+      ggplot2::geom_col(width = 1) +
+      ggplot2::scale_fill_manual(values = c("keep" = "black", "filtered" = "grey"),
                         name = "Status"
                         ) +
-      labs(x = "Sorted_index", y = i,  title = paste0('MS',ms_level , '_', i, '_sorted')) +
-      theme_classic() +
-      theme(legend.position = "none", plot.title = element_text(size = 12))
+      ggplot2::labs(x = "Sorted_index", y = i,  title = paste0('MS',ms_level , '_', i, '_sorted')) +
+      ggplot2::theme_classic() +
+      ggplot2::theme(legend.position = "none", plot.title = ggplot2::element_text(size = 12))
 
 
     pic_ms_var[[paste0('MS',ms_level , '_', i)]] = p1 / p2
