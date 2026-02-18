@@ -1205,7 +1205,7 @@ GetIsotopePatternCosineScore = function(matching_info, mol_list, threshold_iso, 
   ms1_window_tic = sum(ms1_window_data[['intensity']])
   ms1_window_data = dplyr::mutate(ms1_window_data, relative_intensity = intensity/ms1_window_tic)
 
-  cosine_values = numeric(nrow(matching_info))
+  cosine_value = numeric(nrow(matching_info))
 
   for (i in seq_along(dim(matching_info)[1])) {
 
