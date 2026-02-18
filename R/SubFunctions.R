@@ -4,6 +4,7 @@ library(tidyr)
 library(stringr)
 library(ggplot2)
 library(enviPat)
+library(patchwork)
 
 #============
 # functions
@@ -20,6 +21,57 @@ library(enviPat)
 # output:
 # RMSE, CV, d2_smoothness, d1_total_var
 
+
+
+#' Evaluate Smoothing Spline Fitting Performance
+#'
+#' This function calculates multiple evaluation metrics for a fitted smoothing spline,
+#' providing criteria to determine the optimal smoothing parameter (\code{spar}).
+#' It evaluates both the goodness-of-fit and the smoothness of the resulting curve.
+#'
+#' @param spline_fit_result An object of class \code{smooth.spline} representing the fitted model.
+#' @param x_val Numeric vector. The independent variable (typically sorted intensity or m/z) used for fitting.
+#' @param y_val Numeric vector. The observed response variable (transformed intensity).
+#' @param y_predict_val Numeric vector. The predicted values from the spline at the original \code{x_val} coordinates.
+#'
+#' @details
+#' The function calculates four key metrics:
+#' \itemize{
+#'   \item \bold{RMSE}: Root Mean Square Error, measuring the global deviation from observed data.
+#'   \item \bold{CV}: Leave-one-out Cross-Validation (LOOCV) score, representing the model's predictive power.
+#'   \item \bold{D1}: Total variation of the first derivative. Since the input data is typically sorted,
+#'     a smaller D1 indicates a more monotonic and less oscillatory curve.
+#'   \item \bold{D2}: The integral of the squared second derivative (\eqn{\int [f''(x)]^2 dx}),
+#'     which is the standard roughness penalty for cubic splines.
+#' }
+#'
+#'
+#'
+#' @return A named list containing:
+#' \itemize{
+#'   \item \code{RMSE}: Root Mean Square Error.
+#'   \item \code{CV}: LOOCV criterion (extracted from \code{spline_fit_result$cv.crit}).
+#'   \item \code{D1}: Total variation of the first derivative.
+#'   \item \code{D2}: Smoothness penalty based on the second derivative.
+#' }
+#'
+#' @importFrom stats predict
+#'
+#' @examples
+#' \dontrun{
+#' # Fit a spline
+#' fit <- smooth.spline(x, y, spar = 0.5)
+#' pred <- predict(fit, x)$y
+#'
+#' # Evaluate fitting
+#' metrics <- GetSplineSparEvaValue(
+#'   spline_fit_result = fit,
+#'   x_val = x,
+#'   y_val = y,
+#'   y_predict_val = pred
+#' )
+#' print(metrics$RMSE)
+#' }
 GetSplineSparEvaValue = function(spline_fit_result, x_val, y_val, y_predict_val) {
   # add more point to get more precise estimation
   d1 = stats::predict(spline_fit_result,
@@ -74,6 +126,61 @@ GetSplineSparEvaValue = function(spline_fit_result, x_val, y_val, y_predict_val)
 # use_cv: TRUE, according to the manual of smooth.spline(),
 # when there are duplicate points in x, avoid cv = TRUE (because of the LOOCV)
 # plot: whether plot the best spar fitting plot
+
+
+
+#' Find Optimal Spline Smoothing Parameter (spar) via Multi-Objective Optimization
+#'
+#' This function iterates through a range of smoothing parameters (\code{spar}) to
+#' find the optimal value based on a weighted evaluation score. The score combines
+#' goodness-of-fit, cross-validation, and derivative-based smoothness metrics.
+#'
+#' @param x Numeric vector of the independent variable.
+#' @param y Numeric vector of the response variable.
+#' @param spar_start Numeric. The starting value for the \code{spar} sequence.
+#' @param spar_end Numeric. The ending value for the \code{spar} sequence.
+#' @param spar_step Numeric. The increment step for the \code{spar} sequence.
+#' @param RMSE_weight Numeric. Weight assigned to the Root Mean Square Error.
+#' @param CV_weight Numeric. Weight assigned to the Cross-Validation criterion.
+#' @param D1_weight Numeric. Weight assigned to the first derivative total variation.
+#' @param D2_weight Numeric. Weight assigned to the second derivative smoothness penalty.
+#' @param use_cv Logical. Whether to use cross-validation in \code{smooth.spline}. Default is \code{TRUE}.
+#' @param plot Logical. If \code{TRUE}, returns a diagnostic grid plot of all metrics. Default is \code{TRUE}.
+#'
+#' @details
+#' The function performs a grid search over \code{spar}. For each value, it calculates
+#' metrics using \code{\link{GetSplineSparEvaValue}}. Metrics are then normalized
+#' using max-min normalization:
+#' \deqn{X_{norm} = \frac{X - min(X)}{max(X) - min(X)}}
+#' The final evaluation score is the weighted sum of these normalized metrics. The
+#' \code{spar} with the minimum score is selected as the \code{best_spar}.
+#'
+#'
+#'
+#' @return A named list containing:
+#' \itemize{
+#'   \item \code{best_spar}: The optimized smoothing parameter.
+#'   \item \code{spar_data_info}: Data frame with raw metrics for each \code{spar}.
+#'   \item \code{spar_data_info_norm}: Data frame with normalized metrics and the final evaluation score.
+#'   \item \code{spar_data_info_plot}: A \code{patchwork} object (if \code{plot = TRUE})
+#'     showing metric trends and the selected \code{best_spar}.
+#' }
+#'
+#' @import ggplot2
+#' @import patchwork
+#' @importFrom stats predict smooth.spline
+#' @importFrom dplyr bind_rows mutate
+#'
+#' @examples
+#' \dontrun{
+#' result <- FindSplineSpar(
+#'   x = intensity_x, y = intensity_y,
+#'   spar_start = 0.1, spar_end = 1.5, spar_step = 0.05,
+#'   RMSE_weight = 1, CV_weight = 1, D1_weight = 0.5, D2_weight = 0.5
+#' )
+#' # Access the plot
+#' print(result$spar_data_info_plot)
+#' }
 FindSplineSpar = function(x, y,
                             spar_start, spar_end, spar_step,
                             RMSE_weight, CV_weight, D1_weight, D2_weight,
@@ -220,6 +327,49 @@ FindSplineSpar = function(x, y,
 # min_num_custom/max_num_custom: min_num_monosaccharides_additional_customized_list / max_num_monosaccharides_additional_customized_list:
 #   named numeric vectors for customized monosaccharides (may be missing/empty)
 
+
+
+#' Generate All Possible Monosaccharide Composition Combinations
+#'
+#' This function creates a comprehensive data frame of all potential monosaccharide
+#' combinations based on defined minimum and maximum counts for each saccharide unit.
+#' It is typically used to build a search space for glycan mass matching.
+#'
+#' @param monos_list A named numeric vector where names are monosaccharide symbols
+#'   (e.g., \code{Hex}, \code{HexNAc}) and values are their respective monoisotopic masses.
+#' @param min_num_custom A named numeric vector specifying customized minimum counts
+#'   for specific monosaccharides. Overrides or supplements \code{minmax_map}. Default is \code{NULL}.
+#' @param max_num_custom A named numeric vector specifying customized maximum counts
+#'   for specific monosaccharides. Overrides or supplements \code{minmax_map}. Default is \code{NULL}.
+#' @param minmax_map A named list where each element is a numeric vector of length 2
+#'   (e.g., \code{list(Hex = c(3, 10))}), representing the default min and max range.
+#'
+#' @details
+#' The function aligns the input ranges with the \code{monos_list}. It prioritizes
+#' \code{custom} inputs over the \code{minmax_map}. If any monosaccharide in
+#' \code{monos_list} lacks a defined range, the function will throw an error.
+#' The final output is generated using \code{\link[base]{expand.grid}}, representing
+#' every mathematical combination within the specified constraints.
+#'
+#'
+#'
+#' @return A data frame where each row represents a unique glycan composition and
+#'   each column corresponds to a monosaccharide type from \code{monos_list}.
+#'
+#' @importFrom stats setNames
+#'
+#' @examples
+#' \dontrun{
+#' monos_list <- c(Hex = 162.0528, HexNAc = 203.0794, Fuc = 146.0579)
+#' minmax_map <- list(Hex = c(3, 5), HexNAc = c(2, 4), Fuc = c(0, 2))
+#'
+#' # Generate combinations
+#' combo_table <- MakeAllMonosCombos(
+#'   monos_list = monos_list,
+#'   minmax_map = minmax_map
+#' )
+#' head(combo_table)
+#' }
 MakeAllMonosCombos = function(monos_list,
                               min_num_custom = NULL,
                               max_num_custom = NULL,
@@ -270,11 +420,9 @@ MakeAllMonosCombos = function(monos_list,
 
   names(seq_list) = paste0(monos)
 
-  expand.grid(seq_list, KEEP.OUT.ATTRS = FALSE, stringsAsFactors = FALSE)
+  combo_df = expand.grid(seq_list, KEEP.OUT.ATTRS = FALSE, stringsAsFactors = FALSE)
 
-  seq_list = expand.grid(seq_list, KEEP.OUT.ATTRS = FALSE, stringsAsFactors = FALSE)
-
-  return(seq_list)
+  return(combo_df)
 }
 
 
@@ -307,8 +455,45 @@ MakeAllMonosCombos = function(monos_list,
 
 
 
-
-
+#' Generate Diagnostic Plots for MS Metadata Variables
+#'
+#' This function creates a series of diagnostic plots for specified MS metadata variables
+#' (e.g., Peaks Count, Total Ion Current). For each variable, it generates a two-panel
+#' vertical layout showing the values in their original order and in ascending order.
+#'
+#' @param msdata A \code{Spectra} object or a list-like object containing MS metadata.
+#'   Must support \code{[[} indexing for metadata columns.
+#' @param ms_level Integer. The MS level (e.g., 1 or 2) to be visualized.
+#' @param filter_method A named vector or list. The names should correspond to
+#'   metadata columns available in \code{msdata} (e.g., \code{c(peaksCount = ...)}).
+#'
+#' @details
+#' The function filters the metadata based on the specified \code{ms_level} and
+#' creates two plots for each variable:
+#' \itemize{
+#'   \item \bold{Raw Plot}: Values plotted against their original acquisition index.
+#'   \item \bold{Sorted Plot}: Values sorted in ascending order to visualize the
+#'     distribution and identify potential thresholds.
+#' }
+#'
+#'
+#'
+#' @return A named \code{list} of \code{patchwork} objects. Each element is named
+#'   following the pattern \code{MS[level]_[variable]} and contains the combined
+#'   vertical plot (raw / sorted).
+#'
+#' @import ggplot2
+#' @import patchwork
+#'
+#' @examples
+#' \dontrun{
+#' # Assuming ms_data is a Spectra object
+#' filter_cfg <- c(peaksCount = "mean_sd", totIonCurrent = "quantile_prob")
+#' plots <- PlotUnfilteredMsVaribles(ms_data, ms_level = 1, filter_method = filter_cfg)
+#'
+#' # View the plot for Peaks Count
+#' plots$MS1_peaksCount
+#' }
 PlotUnfilteredMsVaribles = function(msdata, ms_level, filter_method) {
 
   ms_level_vec = msdata[["msLevel"]]
@@ -350,7 +535,51 @@ PlotUnfilteredMsVaribles = function(msdata, ms_level, filter_method) {
 
 
 
-#                                                      filter_method
+#' Visualize MS Metadata Filtering Results with Thresholds
+#'
+#' This function generates diagnostic plots that highlight the effect of filtering
+#' on MS metadata variables. It uses color coding to distinguish between scans
+#' that fall within the specified threshold range ("keep") and those that do not ("filtered").
+#'
+#' @param msdata A \code{Spectra} object or a data frame-like object containing MS metadata.
+#' @param ms_level Integer. The MS level (e.g., 1 or 2) to visualize.
+#' @param filter_threshold_value A named list where each name corresponds to a
+#'   metadata column (e.g., \code{peaksCount}) and each value is a numeric vector
+#'   of length 2 representing the (minimum, maximum) threshold.
+#'
+#' @details
+#' For each variable in \code{filter_threshold_value}, the function creates:
+#' \itemize{
+#'   \item \bold{Raw Plot}: Displays values by acquisition index, colored by filter status.
+#'     This helps identify if filtered scans are clustered at specific time points.
+#'   \item \bold{Sorted Plot}: Displays values in ascending order, colored by filter status.
+#'     This reveals where the "cuts" are made in the overall data distribution.
+#' }
+#'
+#'
+#'
+#' @return A named \code{list} of \code{patchwork} objects. Each element is named
+#'   as \code{MS[level]_[variable]} and consists of the raw and sorted plots stacked vertically.
+#'
+#' @import patchwork
+#' @importFrom ggplot2 ggplot aes geom_col scale_fill_manual labs theme_classic theme element_text
+#' @importFrom dplyr mutate if_else
+#'
+#' @examples
+#' \dontrun{
+#' # Example thresholds: keep scans with 10 to 500 peaks
+#' thresholds <- list(peaksCount = c(10, 500))
+#'
+#' # Generate plots
+#' filter_plots <- PlotFilteredMsVaribles(
+#'   msdata = my_spectra,
+#'   ms_level = 1,
+#'   filter_threshold_value = thresholds
+#' )
+#'
+#' # Display the plot
+#' print(filter_plots$MS1_peaksCount)
+#' }
 
 PlotFilteredMsVaribles = function(msdata, ms_level, filter_threshold_value) {
 
