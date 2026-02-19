@@ -1205,7 +1205,41 @@ GetIsotopePatternCosineScore = function(matching_info, mol_list, threshold_iso, 
   ms1_window_tic = sum(ms1_window_data[['intensity']])
   ms1_window_data = dplyr::mutate(ms1_window_data, relative_intensity = intensity/ms1_window_tic)
 
+
+  GetCenteredVector = function(mz_value, intensity_value, centers_value) {
+    # attention!!!!!: mz_value, intensity_value must be in same order
+    if (length(mz_value) != length(intensity_value)) {
+      stop("mz_value and intensity_value must have the same length.")
+    }
+
+    center_idx_map = sapply(mz_value, function(m) {
+      which.min(abs(centers_value - m))
+    })
+
+    center_vector = data.frame(mz = centers_value, intensity = rep(0, length(centers_value)))
+    unique_map_idx = unique(center_idx_map)
+
+    for (idx in unique_map_idx) {
+      total_int = sum(intensity_value[center_idx_map == idx])
+      center_vector$intensity[idx] = total_int
+    }
+
+    return(center_vector)
+
+  }
+
+
+  cosine_sim = function(a, b) {
+    sum(a * b) / (sqrt(sum(a^2)) * sqrt(sum(b^2)))
+  }
+
+
+
+
+
+
   cosine_value = numeric(nrow(matching_info))
+
 
   for (i in seq_len(nrow(matching_info))) {
 
@@ -1248,35 +1282,8 @@ GetIsotopePatternCosineScore = function(matching_info, mol_list, threshold_iso, 
     centers = seq(from = mz_min, to = mz_max, by = bin_w)
 
 
-    GetCenteredVector = function(mz_value, intensity_value, centers_value) {
-      # attention!!!!!: mz_value, intensity_value must be in same order
-      if (length(mz_value) != length(intensity_value)) {
-        stop("mz_value and intensity_value must have the same length.")
-      }
-
-      center_idx_map = sapply(mz_value, function(m) {
-        which.min(abs(centers_value - m))
-      })
-
-      center_vector = data.frame(mz = centers_value, intensity = rep(0, length(centers_value)))
-      unique_map_idx = unique(center_idx_map)
-
-      for (idx in unique_map_idx) {
-        total_int = sum(intensity_value[center_idx_map == idx])
-        center_vector$intensity[idx] = total_int
-      }
-
-      return(center_vector)
-
-    }
-
     ms1_vector = GetCenteredVector(mz_value = ms1_window_data[['mz']], intensity_value = ms1_window_data[['relative_intensity']], centers_value = centers)
     theoretical_iso_vector = GetCenteredVector(mz_value = theoretical_iso_pattern[['m/z']], intensity_value = theoretical_iso_pattern[['abundance']], centers_value = centers)
-
-
-    cosine_sim = function(a, b) {
-      sum(a * b) / (sqrt(sum(a^2)) * sqrt(sum(b^2)))
-    }
 
 
     similarity_value = cosine_sim(ms1_vector$intensity, theoretical_iso_vector$intensity)
