@@ -1207,7 +1207,7 @@ GetIsotopePatternCosineScore = function(matching_info, mol_list, threshold_iso, 
 
   cosine_value = numeric(nrow(matching_info))
 
-  for (i in seq_along(dim(matching_info)[1])) {
+  for (i in seq_len(nrow(matching_info))) {
 
     current_row = matching_info[i, ]
     current_charge = current_row[['total_charge']]

@@ -528,8 +528,7 @@ ConstructGlycanLibrary = function(glycan_type = glycan_type_default,
     if (dim(monosaccharides_combos)[1] <= 0) {
       stop("Can NOT find any monosaccharides combinations that fullfill the criteria of N-glycan. ",
            "N-glycan rules are: ",
-           "1. if there is Neu5Ac or HexA, Hex num >= 3",
-           "2. if there is Neu5Ac or HexA, HexNAc num >= 3",
+           "1. If Neu5Ac or HexA or Neu5Gc num >= 1, Hex num >= 3 and HexNAc num >= 3",
            call. = FALSE)
     }
 
@@ -589,12 +588,50 @@ ConstructGlycanLibrary = function(glycan_type = glycan_type_default,
 
   } else if (glycan_type == 'GSL') {
 
-    GSL_std_monosaccharides = c('Hex', 'HexNAc', 'dHex', 'Neu5Ac')
+    GSL_std_monosaccharides = c('Hex', 'HexNAc', 'dHex', 'Neu5Ac', 'Neu5Gc')
 
+    if (complete_customized_monosaccharides) {
 
+      specific_glycan_monosaccharides_list = monosaccharides_additional_customized_list
+      specific_glycan_monosaccharides_list[GSL_std_monosaccharides] = monosaccharides_list[GSL_std_monosaccharides]
 
+      monosaccharides_combos = MakeAllMonosCombos(specific_glycan_monosaccharides_list,
+                                                  min_num_custom = min_num_monosaccharides_additional_customized_list,
+                                                  max_num_custom = max_num_monosaccharides_additional_customized_list,
+                                                  minmax_map = default_minmax_map)
+    } else {
+      # create list of sequences for expand.grid
+      seq_list = lapply(GSL_std_monosaccharides, function(x) {
+        seq(from = default_minmax_map[[x]][1], to = default_minmax_map[[x]][2], by = 1)
+      })
 
+      for (i in GSL_std_monosaccharides) {
+        if (default_minmax_map[[i]][1] > default_minmax_map[[i]][2]) {
+          stop(sprintf("Invalid range (min > max) for monosaccharide(s): %s.", i),
+               call. = FALSE)
+        }
+      }
+      names(seq_list) = paste0(GSL_std_monosaccharides)
 
+      monosaccharides_combos = expand.grid(seq_list, KEEP.OUT.ATTRS = FALSE, stringsAsFactors = FALSE)
+
+      specific_glycan_monosaccharides_list = monosaccharides_list[GSL_std_monosaccharides]
+    }
+
+    monosaccharides_combos = dplyr::filter(monosaccharides_combos,
+                                           rowSums(dplyr::across(dplyr::where(is.numeric))) >= min_total_monosaccharides_num & rowSums(dplyr::across(dplyr::where(is.numeric))) <= max_total_monosaccharides_num)
+
+    # apply GSL rules
+    monosaccharides_combos = dplyr::filter(monosaccharides_combos, dplyr::if_else(dHex >= 1, Hex >= 3, TRUE)) |>
+      dplyr::filter(dplyr::if_else(HexNAc >= 3, Hex >= 2, TRUE))
+
+    if (dim(monosaccharides_combos)[1] <= 0) {
+      stop("Can NOT find any monosaccharides combinations that fullfill the criteria of GSL. ",
+           "GSL rules are: ",
+           "1. If dHex num >= 1, HexNAc num >= 3",
+           "3. If HexNAc num >= 1, Hex num >= 2",
+           call. = FALSE)
+    }
 
 
   } else {
@@ -1867,7 +1904,7 @@ threshold_iso_probalility_default = 0.01
 # > ms1_window_left = 1
 # > ms1_window_right = 2
 
-bin_width_default = 0.05
+bin_width_default = 0.3
 
 
 
