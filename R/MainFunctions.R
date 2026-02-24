@@ -841,7 +841,7 @@ ConstructGlycanLibrary = function(glycan_type = glycan_type_default,
 GetMonoisoAndIsotopologueRatio = function(glycan_lib,
 
                                           molecular_names,
-                                          molecular_formula_list = molecular_formula_list_default,
+                                          molecular_formula_list,
 
                                           monosaccharides_names,
 
