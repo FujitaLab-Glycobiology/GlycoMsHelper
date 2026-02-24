@@ -1235,9 +1235,6 @@ GetIsotopePatternCosineScore = function(matching_info, mol_list, threshold_iso, 
 
 
 
-
-
-
   cosine_value = numeric(nrow(matching_info))
 
 

@@ -764,6 +764,329 @@ ConstructGlycanLibrary = function(glycan_type = glycan_type_default,
 
 
 
+#' Calculate Monoisotopic and M+1 Isotopologue Ratios for Glycan Libraries
+#'
+#' @description
+#' This function iterates through a glycan library to calculate theoretical isotopic distributions
+#' based on chemical formulas. It identifies the monoisotopic peak and the most abundant
+#' M+1 isotopologue, calculates their abundance ratio, and generates a scatter plot of monoisotopic m/z versus the
+#' monoisotopic-to-\eqn{M+1} abundance ratio, colored by charge state.
+#'
+#' @param glycan_lib A data frame containing glycan compositions. Must include a \code{total_charge}
+#' column and columns corresponding to the names in \code{molecular_names}.
+#' @param molecular_names A character vector of column names in \code{glycan_lib} that
+#' represent the counts of specific molecular building blocks (e.g., "Hex", "HexNAc").
+#' @param molecular_formula_list A named list where keys match \code{molecular_names}
+#' and values are their corresponding chemical formulas (e.g., \code{list(Hex = "C6H10O5")}).
+#' @param monosaccharides_names A character vector of column names used to construct
+#' a human-readable composition string (e.g., "Hex3HexNAc2").
+#' @param threshold_iso_probalility A numeric value specifying the probability threshold
+#' for \code{enviPat::isopattern}. Peaks with relative abundance below this value are ignored.
+#'
+#' @details
+#' The function utilizes the \code{enviPat} package to predict isotopic patterns. It specifically
+#' identifies the monoisotopic peak by ensuring zero counts of "heavy" isotopes (e.g., 13C, 15N).
+#' The M+1 isotopologue is identified as the most abundant peak within a specific mass tolerance
+#' (\eqn{1/z \pm tolerance}) from the monoisotopic peak.
+#'
+#' #' The function adds the following columns to \code{glycan_lib}:
+#' \itemize{
+#'   \item \code{glycan_string}
+#'   \item \code{ion_formula}
+#'   \item \code{theoretical_monoisotopic_mz}
+#'   \item \code{theoretical_isotopologue_mz}
+#'   \item \code{theoretical_monoisotopic_abundance}
+#'   \item \code{theoretical_isotopologue_abundance}
+#'   \item \code{theoretical_monoisotopic_isotopologue_abundance_ratio}
+#' }
+#'
+#' #' If a row cannot produce a valid molecular formula, the added fields are set to \code{NA}.
+#' The function stops with an error if it detects zero or multiple monoisotopic peaks or if it cannot
+#' uniquely identify the most abundant \eqn{M+1} isotopologue under the defined criteria.
+#'
+#' @return A named list containing:
+#' \itemize{
+#'   \item \code{glycan_monosaccharides_library_isotopic_info}: The original \code{glycan_lib}
+#'   augmented with columns for theoretical m/z, abundance, and the monoisotopic/isotopologue ratio.
+#'   \item \code{isotopic_distribution_plot}: A \code{ggplot2} object showing the relationship
+#'   between monoisotopic m/z and the abundance ratio, colored by charge state.
+#' }
+#'
+#' @importFrom utils data txtProgressBar setTxtProgressBar capture.output
+#' @importFrom enviPat multiform mergeform check_chemform isopattern
+#' @importFrom dplyr mutate filter arrange desc slice_head bind_rows bind_cols
+#' @import ggplot2
+#'
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Define formula list
+#' formula_list <- list(Hex = "C6H10O5", HexNAc = "C8H13NO5", Fuc = "C6H10O4")
+#'
+#' # Run calculation
+#' results <- GetMonoisoAndIsotopologueRatio(
+#'   glycan_lib = my_data,
+#'   molecular_names = c("Hex", "HexNAc", "Fuc"),
+#'   monosaccharides_names = c("Hex", "HexNAc", "Fuc"),
+#'   molecular_formula_list = formula_list,
+#'   threshold_iso_probalility = 0.0001
+#' )
+#'
+#' # Access plot
+#' print(results$isotopic_distribution_plot)
+#' }
+
+# threshold_iso_probalility_default = 0.01
+GetMonoisoAndIsotopologueRatio = function(glycan_lib,
+
+                                          molecular_names,
+                                          molecular_formula_list = molecular_formula_list_default,
+
+                                          monosaccharides_names,
+
+                                          threshold_iso_probalility
+) {
+
+  utils::data(isotopes, package = "enviPat", envir = environment())
+  utils::data(adducts, package = "enviPat", envir = environment())
+
+  # composition_string = c()
+
+  most_abundant_iso_name <- c(
+    "1H","4He","7Li","9Be","11B","12C","14N","16O","19F","20Ne", "23Na","24Mg","27Al","28Si","31P","32S","35Cl","40Ar","39K","40Ca",
+    "45Sc","48Ti","51V","52Cr","55Mn","56Fe","59Co","58Ni","63Cu","64Zn",
+    "69Ga","74Ge","75As","80Se","79Br","84Kr","85Rb","88Sr","89Y","90Zr",
+    "93Nb","98Mo","102Ru","103Rh","106Pd","107Ag","114Cd",
+    "115In","120Sn","121Sb","130Te","127I","132Xe","133Cs","138Ba",
+    "139La","140Ce","141Pr","142Nd","152Sm","153Eu","158Gd",
+    "159Tb","164Dy","165Ho","166Er","169Tm","174Yb","175Lu","180Hf",
+    "181Ta","184W","187Re","192Os","193Ir","195Pt","197Au","202Hg",
+    "205Tl","208Pb","209Bi", "232Th", "231Pa", "238U"
+  )
+  other_iso_name = c(
+    "2H", "3He", "6Li", "10B", "13C", "15N", "17O", "18O", "21Ne", "22Ne", "25Mg", "26Mg", "29Si", "30Si", "33S", "34S", "35S", "36S",
+    "36Cl",  "37Cl",  "36Ar",  "38Ar",  "40K" ,  "41K", "41Ca",  "42Ca", "43Ca",  "44Ca", "45Ca",  "46Ca",  "47Ca",  "48Ca",  "46Ti",  "47Ti",  "49Ti",  "50Ti",
+    "50V",   "50Cr" , "53Cr",  "54Cr",  "54Fe" , "55Fe" , "57Fe",  "58Fe",  "60Ni",  "61Ni",  "62Ni",  "64Ni",  "65Cu",  "66Zn",  "67Zn",  "68Zn",  "70Zn",  "71Ga" ,
+    "70Ge",  "72Ge"  ,"73Ge",  "76Ge",  "74Se" , "76Se" , "77Se",  "78Se",  "82Se",  "80Br",  "81Br",  "78Kr",  "80Kr",  "82Kr",  "83Kr",  "86Kr",  "87Rb",  "84Sr" ,
+    "86Sr" , "87Sr" , "91Zr",  "92Zr",  "94Zr",  "96Zr" , "92Mo",  "94Mo",  "95Mo",  "96Mo" , "97Mo",  "100Mo", "96Ru",  "98Ru",  "99Ru",  "100Ru", "101Ru", "104Ru",
+    "102Pd", "104Pd", "105Pd", "108Pd", "110Pd" ,"109Ag", "106Cd", "108Cd", "110Cd", "111Cd" ,"112Cd", "113Cd", "116Cd", "113In", "112Sn", "114Sn", "115Sn", "116Sn",
+    "117Sn", "118Sn", "119Sn", "122Sn", "124Sn" ,"123Sb", "120Te", "122Te", "123Te", "124Te" ,"125Te", "126Te", "128Te", "124Xe", "126Xe", "128Xe", "129Xe", "130Xe",
+    "131Xe", "134Xe", "136Xe", "130Ba", "132Ba" ,"134Ba", "135Ba", "136Ba", "137Ba", "138La" ,"136Ce", "138Ce", "142Ce", "143Nd", "144Nd", "145Nd", "146Nd", "148Nd",
+    "150Nd", "144Sm", "147Sm", "148Sm", "149Sm" ,"150Sm", "154Sm", "151Eu", "152Gd", "154Gd", "155Gd", "156Gd", "157Gd", "160Gd", "156Dy", "158Dy", "160Dy", "161Dy",
+    "162Dy", "163Dy", "162Er", "164Er", "167Er" ,"168Er", "170Er", "168Yb", "170Yb", "171Yb", "172Yb", "173Yb", "176Yb", "176Lu", "174Hf", "176Hf", "177Hf", "178Hf",
+    "179Hf", "180Ta", "180W",  "182W",  "183W"  ,"186W",  "185Re", "184Os", "186Os", "187Os", "188Os", "189Os", "190Os", "191Ir", "190Pt", "192Pt", "194Pt", "196Pt",
+    "198Pt", "196Hg", "198Hg", "199Hg", "200Hg" ,"201Hg", "204Hg", "203Tl", "204Pb", "206Pb", "207Pb", "234U" , "235U"
+  )
+
+  GetGlycanCompositionString = function(df, mono_names) {
+
+    apply(df[, mono_names], 1, function(x) {
+      paste0(
+        mono_names[x > 0],
+        x[x > 0],
+        collapse = ""
+      )
+    })
+  }
+
+  new_columns_glycan_lib = vector("list", nrow(glycan_lib))
+
+  # progress bar
+  pb = utils::txtProgressBar(min = 0, max = nrow(glycan_lib), style = 3)
+  on.exit(close(pb))
+
+  for (i in seq_len(nrow(glycan_lib))) {
+
+    # progress bar
+    utils::setTxtProgressBar(pb, i)
+
+    current_row = glycan_lib[i, , drop = FALSE]
+    glycan_str = GetGlycanCompositionString(df = current_row, mono_names = monosaccharides_names)
+
+    molecular_formula = NULL
+    current_charge = current_row[['total_charge']]
+
+    for (mol_name in molecular_names) {
+
+      current_formula_num = current_row[[mol_name]]
+
+      if (current_formula_num == 0) {
+        next
+      }
+
+      current_base_formula = molecular_formula_list[[mol_name]]
+      current_comp_formula = enviPat::multiform(current_base_formula, current_formula_num)
+
+      if (is.null(molecular_formula)) {
+        molecular_formula = current_comp_formula
+      } else {
+        molecular_formula = enviPat::mergeform(molecular_formula, current_comp_formula)
+      }
+    }
+
+    # checking whether there is molecular_formula
+    if (is.null(molecular_formula) || length(molecular_formula) == 0) {
+      new_columns_glycan_lib[[i]] <- list(
+        glycan_string = glycan_str,
+        ion_formula = NA_character_,
+        theoretical_monoisotopic_mz = NA_real_,
+        theoretical_isotopologue_mz = NA_real_,
+        theoretical_monoisotopic_abundance = NA_real_,
+        theoretical_isotopologue_abundance = NA_real_,
+        theoretical_monoisotopic_isotopologue_abundance_ratio = NA_real_
+      )
+      next
+    }
+
+    # isotopic distribution calculation
+    molecular_formula = enviPat::check_chemform(isotopes, molecular_formula, get_sorted = T)
+    new_molecular_formula = molecular_formula$new_formula
+
+    molecular_iso_pattern = enviPat::isopattern(isotopes, new_molecular_formula,
+                                                charge = current_charge, rel_to = 2, threshold = threshold_iso_probalility, verbose = F)
+
+    theoretical_iso_pattern = as.data.frame(molecular_iso_pattern[[1]])
+
+    # get the monoisotopic
+    other_iso_colnames = intersect(colnames(theoretical_iso_pattern), other_iso_name)
+
+    is_monoisotopic = rowSums(theoretical_iso_pattern[, other_iso_colnames, drop = FALSE]) == 0
+
+    monoisotopic_info = theoretical_iso_pattern[is_monoisotopic, ]
+
+    if (nrow(monoisotopic_info) != 1) {
+      row_info <- paste(capture.output(print(current_row)), collapse = "\n")
+      stop(paste0("More than one monoisotopic detected.\n",
+                  "Relevant row data:\n", row_info),
+           call. = FALSE)
+    }
+
+    mono_mz = monoisotopic_info[['m/z']][1]
+    mono_abundance = monoisotopic_info[['abundance']][1]
+
+    # get the isotopologue
+    target_shift = 1 / current_charge
+    tol = 0.05 / current_charge
+
+    isotopologue_candidates = dplyr::mutate(theoretical_iso_pattern, dmz = `m/z` - mono_mz) |>
+      dplyr::filter(dmz > 0, abs(dmz - target_shift) <= tol)
+
+    isotopologue_info = dplyr::arrange(isotopologue_candidates, dplyr::desc(abundance)) |>
+      dplyr::slice_head(n = 1)
+
+    if (nrow(isotopologue_info) != 1) {
+      row_info <- paste(capture.output(print(current_row)), collapse = "\n")
+      stop(paste0("More than one most abundant M plus 1 isotopologue detected.\n",
+                  "Relevant row data:\n", row_info),
+           call. = FALSE)
+    }
+
+    isotopologue_mz = isotopologue_info[['m/z']][1]
+    isotopologue_abundance = isotopologue_info[['abundance']][1]
+
+    # calculate the ratio
+    mono_isotopologue_abundance_ratio = mono_abundance/isotopologue_abundance
+
+    # record the glycan string and iso formula
+    new_columns_glycan_lib[[i]] = list(
+      glycan_string = glycan_str,
+      ion_formula = new_molecular_formula,
+      theoretical_monoisotopic_mz = mono_mz,
+      theoretical_isotopologue_mz = isotopologue_mz,
+      theoretical_monoisotopic_abundance = mono_abundance,
+      theoretical_isotopologue_abundance = isotopologue_abundance,
+      theoretical_monoisotopic_isotopologue_abundance_ratio = mono_isotopologue_abundance_ratio
+    )
+
+  }
+
+  new_columns_glycan_lib_df = dplyr::bind_rows(new_columns_glycan_lib)
+  new_glycan_lib = dplyr::bind_cols(glycan_lib, new_columns_glycan_lib_df)
+
+
+  # monoisotopic mz and Monoisotopic / Second isotopologue abundance ratio plot
+  cyan_palette =   c("#C6DCDC", "#9FC4C4", "#7FA8A8", "#5E8787")
+  blue_palette =   c("#D2DCEB", "#AFC1DC", "#8FA8C6", "#6D87A8")
+  purple_palette = c("#E1D3E0", "#C9AFC7", "#B58FB2", "#946F92")
+  rose_palette =   c("#F0D2D2", "#E5AFAF", "#D48C8C", "#B46B6B")
+  beige_palette =  c("#F3E6D7", "#E6D0B8", "#D9BFA0", "#C7A888")
+
+  sage_palette =   c("#E3EDDE", "#C9DDBF", "#B2CEA4", "#93B486")
+  teal_palette =   c("#D7E7EC", "#B6D2DB", "#9FC1CC", "#7EA8B5")
+  mauve_palette =  c("#E8D9E5", "#D3B7CF", "#C29DBE", "#A87FA4")
+  salmon_palette = c("#F4D9D2", "#E8B7AC", "#DB9A8F", "#C57C71")
+  orange_palette = c("#F6E0C8", "#EDC08F", "#E1A35C", "#C5823F")
+
+  ratio_plot = ggplot2::ggplot(new_glycan_lib,
+                               ggplot2::aes(x = theoretical_monoisotopic_mz,
+                                            y = theoretical_monoisotopic_isotopologue_abundance_ratio,
+                                            color = factor(total_charge))) +
+    ggplot2::geom_point(size = 2, alpha = 0.8) +
+    ggplot2::scale_color_manual(
+      values = c(
+        "1" = sage_palette[3],
+        "2" = teal_palette[3],
+        "3" = mauve_palette[3],
+        "4" = salmon_palette[3],
+        "5" = orange_palette[3],
+        "6" = cyan_palette[3],
+        "7" = blue_palette[3],
+        "8" = purple_palette[3],
+        "9" = rose_palette[3],
+        "10" = beige_palette[3]
+      )
+    ) +
+    ggplot2::labs(
+      x = "Theoretical monoisotopic m/z",
+      y = "Monoisotopic / Second isotopologue abundance ratio",
+      color = "Charge state"
+    ) +
+    ggplot2::theme_classic() +
+    ggplot2::theme(
+      legend.position = "right",
+      plot.title = ggplot2::element_text(size = 12)
+    )
+
+  return(
+    list(
+      glycan_monosaccharides_library_isotopic_info = new_glycan_lib,
+      isotopic_distribution_plot = ratio_plot
+    )
+  )
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1039,9 +1362,6 @@ ms2_denoising_detail_default = list(spline_segmentation_regression = list(spar_s
 
                                 fixed_value = 30 # define the noise threshold
 )
-
-
-
 
 #' MS2 Spectrum Denoising using Regression or Thresholding Methods
 #'
