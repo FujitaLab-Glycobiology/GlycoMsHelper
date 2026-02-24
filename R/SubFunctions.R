@@ -807,9 +807,24 @@ GetSplineSegmentationNoise = function(denoising_detail, denoising_method, transf
 
   intensity_tops_diff = abs(diff(intensity_tops))
 
-  is_complex_pattern <- all(abs(intensity_tops_diff - 1) < 0.1) ||
-    all(abs(intensity_tops_diff - 0.5) < 0.05) ||
-    all(abs(intensity_tops_diff - 0.33) < 0.03)
+  if (length(intensity_tops_diff) >= 2) {
+    # calculate cv to see if these m/z have regular pattern
+
+    avg_diff <- mean(intensity_tops_diff)
+    sd_diff  <- sd(intensity_tops_diff)
+
+    diff_cv <- sd_diff / avg_diff
+
+    is_complex_pattern <- diff_cv < 0.05 && avg_diff > 0.09 && avg_diff < 1.11
+
+  } else if (length(intensity_tops_diff) == 1) {
+    is_complex_pattern <- all(abs(intensity_tops_diff - 1) < 0.1) ||
+      all(abs(intensity_tops_diff - 0.5) < 0.05) ||
+      all(abs(intensity_tops_diff - 0.33) < 0.03) ||
+      all(abs(intensity_tops_diff - 0.25) < 0.02)
+  } else {
+    is_complex_pattern <- FALSE
+  }
 
   # for some of the isotopic patterns, especially for the non-proton ions,
   # fragmentation is not complete, the precursor isotopes have the highest intensity,
