@@ -3,7 +3,7 @@
 export(ConstructGlycanLibrary)
 export(FindPossibleGlycanComposition)
 export(FindSpectrumByDiagnosticFragments)
-export(GetMS2spectrumSimilarityScore)
+export(GetMS2SpectrumSimilarityScore)
 export(GetMonoisoAndIsotopologueRatio)
 export(MS2SpectrumDenoising)
 export(MsFileChecker)

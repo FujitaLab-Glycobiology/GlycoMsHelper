@@ -222,7 +222,7 @@ final_glycan_spectrum_matching_result = GlycoMsHelper::ValidateGlycanComposition
 ### STEP7:
 
 ``` r
-ms2_spectrum_similarity_info = GetMS2spectrumSimilarityScore(ms_data = mass_spectrum_data_filtered, 
+ms2_spectrum_similarity_info = GetMS2SpectrumSimilarityScore(ms_data = mass_spectrum_data_filtered, 
                                          spectrum_matching_result = final_glycan_spectrum_matching_result, 
                                          glycan_composition_str = 'Hex3HexNAc4dHex1', 
                                          adduct_type = c(H = 2, Na = 0, K = 0), 

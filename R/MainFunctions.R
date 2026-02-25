@@ -2453,7 +2453,7 @@ adduct_type_default = c(H = 2, Na = 0, K = 0)    # c(H = 1, K = 1)
 #' @examples
 #' \dontrun{
 #' # Example usage:
-#' result <- GetMS2spectrumSimilarityScore(
+#' result <- GetMS2SpectrumSimilarityScore(
 #'   ms_data = raw_spectra,
 #'   spectrum_matching_result = match_df,
 #'   glycan_composition_str = "Hex3HexNAc4dHex1",
@@ -2468,7 +2468,7 @@ adduct_type_default = c(H = 2, Na = 0, K = 0)    # c(H = 1, K = 1)
 #' }
 
 
-GetMS2spectrumSimilarityScore = function(ms_data,
+GetMS2SpectrumSimilarityScore = function(ms_data,
                                          spectrum_matching_result,
                                          glycan_composition_str,
                                          adduct_type = adduct_type_default,
