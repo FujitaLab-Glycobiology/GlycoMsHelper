@@ -225,3 +225,16 @@ final_glycan_spectrum_matching_result = GlycoMsHelper::ValidateGlycanComposition
 
 # write.csv(final_glycan_spectrum_matching_result, file = 'your_csv_file_path_and_name.csv')
 ```
+
+
+### STEP7: 
+
+```{r STEP7, eval = FALSE}
+ms2_spectrum_similarity_info = GetMS2spectrumSimilarityScore(ms_data = mass_spectrum_data_filtered, 
+                                         spectrum_matching_result = final_glycan_spectrum_matching_result, 
+                                         glycan_composition_str = 'Hex3HexNAc4dHex1', 
+                                         adduct_type = c(H = 2, Na = 0, K = 0), 
+                                         bin_width = 0.3, 
+                                         ms2_range_start = 100, 
+                                         ms2_range_end = 2200) 
+```

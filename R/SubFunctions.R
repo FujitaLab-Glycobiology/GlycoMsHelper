@@ -811,7 +811,7 @@ GetSplineSegmentationNoise = function(denoising_detail, denoising_method, transf
     # calculate cv to see if these m/z have regular pattern
 
     avg_diff <- mean(intensity_tops_diff)
-    sd_diff  <- sd(intensity_tops_diff)
+    sd_diff  <- stats::sd(intensity_tops_diff)
 
     diff_cv <- sd_diff / avg_diff
 
@@ -1286,7 +1286,7 @@ GetIsotopePatternCosineScore = function(matching_info, mol_list, threshold_iso, 
     molecular_iso_pattern = enviPat::isopattern(isotopes, new_molecular_formula,
                                                 charge = current_charge, rel_to = 2, threshold = threshold_iso, verbose = F)
 
-    theoretical_iso_pattern = as.data.frame(molecular_iso_pattern[[new_molecular_formula]])
+    theoretical_iso_pattern = as.data.frame(molecular_iso_pattern[[1]])
 
     mz_min = min(theoretical_iso_pattern[['m/z']], ms1_window_data[['mz']])
     mz_max = max(theoretical_iso_pattern[['m/z']], ms1_window_data[['mz']])

@@ -5,6 +5,8 @@ library(patchwork)
 library('Spectra')
 library(segmented)
 library(enviPat)
+library(ComplexHeatmap)
+library(circlize)
 
 # source('SubFunctions.R')
 
@@ -1539,8 +1541,6 @@ MS2SpectrumDenoising = function(ms_data,
 
   }
 
-  # close progress bar
-  close(pb)
 
   reg_info = dplyr::bind_rows(regression_info_list)
 
@@ -1759,8 +1759,7 @@ FindSpectrumByDiagnosticFragments = function(ms_data, ms_data_raw, diagnostic_fr
 
   }
 
-  # close progress bar
-  close(pb)
+
 
   # check res_list
   if (length(res_list) == 0) {
@@ -2338,6 +2337,9 @@ ValidateGlycanCompositionByIsotopePattern = function(spectrum_matching_info,
 
       current_precursor_mz = unique(current_matching_info[['ms2_precursor_mz']])
 
+      if (length(current_ms1_id) != 1) stop("ms1_spectrum_id is not unique for ms2_id=", current_ms2_id, call.=FALSE)
+      if (length(current_precursor_mz) != 1) stop("ms2_precursor_mz is not unique for ms2_id=", current_ms2_id, call.=FALSE)
+
       ms1_window_left_range = current_precursor_mz - ms1_window_left
       ms1_window_right_range = current_precursor_mz + ms1_window_right
 
@@ -2364,8 +2366,6 @@ ValidateGlycanCompositionByIsotopePattern = function(spectrum_matching_info,
 
   }
 
-  # close progress bar
-  close(pb)
 
   validate_spectrum_matching_info = dplyr::bind_rows(res_list)
 
@@ -2373,5 +2373,285 @@ ValidateGlycanCompositionByIsotopePattern = function(spectrum_matching_info,
 
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# for adduct_type, must define all the adduct appear in the matching result, even it is 0
+adduct_type_default = c(H = 2, Na = 0, K = 0)    # c(H = 1, K = 1)
+
+# spectrum_matching_result must contains one column named as ms2_spectrum_id
+
+# spectrum_matching_result must contains the following column:
+# adduct type: H, K, Na, et.al,
+# glycan_string
+# ms2_retention_time
+# ms2_spectrum_id
+# ms2_total_ion_current
+
+
+
+
+
+#' Calculate MS2 Consine Similarity Score for a Given Glycan/Adduct and Generate Annotated Heatmap
+#'
+#' @description
+#' This function filters MS2 spectra based on a specific glycan composition and adduct type,
+#' performs m/z binning, calculates pairwise Cosine similarity scores, and generates
+#' a square-tiled heatmap with a top TIC (Total Ion Current) barplot annotation.
+#'
+#' This function extracts MS2 spectra that match a specified glycan composition string and
+#' an exact adduct configuration from `spectrum_matching_result`, bins each MS2 spectrum
+#' into a common m/z grid, and computes a pairwise cosine similarity matrix.
+#' A `ComplexHeatmap` heatmap is generated with a top barplot annotation showing
+#' `sqrt(ms2_total_ion_current)`.
+#'
+#'
+#'
+#' @param ms_data A \code{Spectra} object containing the raw mass spectrometry data.
+#' @param spectrum_matching_result A data frame containing matching results. Must include columns:
+#'   \code{ms2_spectrum_id}, \code{glycan_string}, \code{ms2_retention_time},
+#'   \code{ms2_total_ion_current}, and columns for adduct types.
+#' @param glycan_composition_str Character. The glycan composition string to filter by (e.g., 'Hex3HexNAc4dHex1').
+#' @param adduct_type A named numeric vector defining the adduct state (e.g., \code{c(H = 2, Na = 0, K = 0)}).
+#' @param bin_width Numeric. The width of the m/z bins for vectorization.
+#' @param ms2_range_start Numeric. The starting m/z value for the similarity calculation.
+#' @param ms2_range_end Numeric. The ending m/z value for the similarity calculation.
+#'
+#' @return A \code{list} containing:
+#' \itemize{
+#'   \item \code{similarity_score}: A symmetric numeric matrix of pairwise Cosine similarities.
+#'   \item \code{similarity_score_heatmap}: A \code{HeatmapList} object rendered with the legend on the left.
+#' }
+#'
+#' @details
+#' The function ensures data alignment between the similarity matrix and TIC metadata using
+#' \code{match()}. The heatmap is generated with fixed square tiles and a customized
+#' color gradient from white to deep red.
+#'
+#' @importFrom dplyr filter arrange
+#' @importFrom Spectra peaksData
+#' @importFrom stats setNames
+#' @importFrom utils txtProgressBar setTxtProgressBar
+#' @importFrom circlize colorRamp2
+#' @importFrom ComplexHeatmap columnAnnotation anno_barplot Heatmap draw
+#' @importFrom grid gpar unit
+#'
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Example usage:
+#' result <- GetMS2spectrumSimilarityScore(
+#'   ms_data = raw_spectra,
+#'   spectrum_matching_result = match_df,
+#'   glycan_composition_str = "Hex3HexNAc4dHex1",
+#'   adduct_type = c(H = 2, Na = 0, K = 0),
+#'   bin_width = 0.3,
+#'   ms2_range_start = 100,
+#'   ms2_range_end = 2000
+#' )
+#'
+#' # Access the matrix
+#' print(result$similarity_score)
+#' }
+
+
+GetMS2spectrumSimilarityScore = function(ms_data,
+                                         spectrum_matching_result,
+                                         glycan_composition_str,
+                                         adduct_type = adduct_type_default,
+                                         bin_width,
+                                         ms2_range_start,
+                                         ms2_range_end) {
+  # check the input varibles
+  if (ms2_range_end <= ms2_range_start) {
+    stop("'ms2_range_end' must >= 'ms2_range_start'. ", call. = FALSE)
+  }
+
+  adduct_names = names(adduct_type)
+  if(!all(adduct_names %in% colnames(spectrum_matching_result))) {
+    stop("Please provide adducts present in the glycan library", call. = FALSE)
+  }
+
+  composition_info = dplyr::filter(spectrum_matching_result, glycan_string == glycan_composition_str)
+
+  matches = apply(composition_info[, adduct_names], 1, function(row) all(row == adduct_type))
+  specific_composition_info = composition_info[matches, ]
+  specific_composition_info = dplyr::arrange(specific_composition_info, ms2_retention_time)
+
+  if (nrow(specific_composition_info) == 0) {
+    stop("No matched rows for given 'glycan_composition_str' and 'adduct_type'.", call. = FALSE)
+  }
+
+
+  GetCenteredVector = function(mz_value, intensity_value, centers_value) {
+    # attention!!!!!: mz_value, intensity_value must be in same order
+    if (length(mz_value) != length(intensity_value)) {
+      stop("mz_value and intensity_value must have the same length.")
+    }
+
+    center_idx_map = sapply(mz_value, function(m) {
+      which.min(abs(centers_value - m))
+    })
+
+    center_vector = data.frame(mz = centers_value, intensity = rep(0, length(centers_value)))
+    unique_map_idx = unique(center_idx_map)
+
+    for (idx in unique_map_idx) {
+      total_int = sum(intensity_value[center_idx_map == idx])
+      center_vector$intensity[idx] = total_int
+    }
+
+    return(center_vector)
+  }
+
+  ms2_id = unique(specific_composition_info$ms2_spectrum_id)
+  ms_id_map = stats::setNames(seq_along(ms_data), ms_data$spectrumId)
+
+  centers = seq(from = ms2_range_start, to = ms2_range_end, by = bin_width)
+
+  centered_intensity_matrix <- matrix(NA_real_, nrow = length(ms2_id), ncol = length(centers))
+
+  # progress bar
+  pb = utils::txtProgressBar(min = 0, max = length(ms2_id), style = 3)
+  on.exit(close(pb))
+
+  for (i in seq_along(ms2_id)) {
+    # progress bar
+    utils::setTxtProgressBar(pb, i)
+
+    current_ms2_id = ms2_id[i]
+    ms2_index = ms_id_map[current_ms2_id]
+
+    current_ms2_data = as.data.frame(Spectra::peaksData(ms_data)[[ms2_index]])
+
+    if (nrow(current_ms2_data) == 0) {
+      centered_intensity_matrix[i, ] = 0
+      next
+    }
+
+    current_ms2_centered_values = GetCenteredVector(mz_value = current_ms2_data[['mz']],
+                                                    intensity_value = current_ms2_data[['intensity']],
+                                                    centers_value = centers)
+    centered_intensity_matrix[i, ] = current_ms2_centered_values[['intensity']]
+
+  }
+
+  rownames(centered_intensity_matrix) = ms2_id
+
+  norms <- sqrt(rowSums(centered_intensity_matrix^2))
+  normalized_matrix <- centered_intensity_matrix / norms
+  similarity_matrix <- normalized_matrix %*% t(normalized_matrix)
+
+  col_fun = circlize::colorRamp2(
+    seq(from = 0, to = 1, length.out = 10),
+    c('white',
+      '#ffffcc',
+      '#ffefa5',
+      '#fedd7f',
+      '#febf5a',
+      '#fd9d43',
+      '#fd7134',
+      '#f43d25',
+      '#db141e',
+      '#b60026')
+  )
+
+  # tic_aligned = dplyr::filter(spectrum_matching_result, ms2_spectrum_id %in% colnames(similarity_matrix))
+  # tic_aligned <- spectrum_matching_result[match(colnames(similarity_matrix), spectrum_matching_result$ms2_spectrum_id), ]
+  idx <- match(colnames(similarity_matrix), spectrum_matching_result$ms2_spectrum_id)
+  if (anyNA(idx)) {
+    missing_ids <- colnames(similarity_matrix)[is.na(idx)]
+    stop("These ms2_spectrum_id are missing in spectrum_matching_result: ",
+         paste(missing_ids, collapse = ", "), call. = FALSE)
+  }
+  tic_aligned <- spectrum_matching_result[idx, , drop = FALSE]
+
+  # tic_values = sqrt(tic_aligned$ms2_total_ion_current)   #/sum(tic_aligned$ms2_total_ion_current)
+  tic <- tic_aligned$ms2_total_ion_current
+  tic[is.na(tic) | tic < 0] <- 0
+  tic_values <- sqrt(tic)
+
+  cell_size = grid::unit(10, "points")
+
+  top_anno = ComplexHeatmap::columnAnnotation(
+    sqrt_TIC = ComplexHeatmap::anno_barplot(
+      tic_values,
+      gp = grid::gpar(fill = "black", col = NA),
+      border = FALSE, bar_width = 0.9,
+      height = 8*cell_size,                    # 设置柱状图高度
+      axis_param = list(side = "left", labels_rot = 0, gp = grid::gpar(fontsize = 8))
+    ),
+    annotation_name_side = "left",
+    annotation_name_gp = grid::gpar(fontsize = 8),
+    annotation_name_offset = grid::unit(30, "points")
+  )
+
+  sim_heatmap = ComplexHeatmap::Heatmap(similarity_matrix,
+                                        name = "Cosine similarity score",
+                                        col = col_fun,
+                                        top_annotation = top_anno,
+                                        cluster_rows = F,
+                                        cluster_columns = F,
+
+                                        show_row_names = TRUE,
+                                        show_column_names = TRUE,
+                                        row_names_gp = grid::gpar(fontsize = 8),
+                                        column_names_gp = grid::gpar(fontsize = 8),
+
+                                        width = ncol(similarity_matrix) * cell_size,
+                                        height = nrow(similarity_matrix) * cell_size,
+
+                                        column_title = "MS2 cosine similarity")
+
+  sim_heatmap_drawn = ComplexHeatmap::draw(
+    sim_heatmap,
+    heatmap_legend_side = "left"
+  )
+
+
+  return(
+    list(
+      similarity_score = similarity_matrix,
+      similarity_score_heatmap = sim_heatmap_drawn
+    )
+  )
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

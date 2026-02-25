@@ -5,7 +5,7 @@
 \alias{adduct_type_default}
 \title{AB', 'PA', 'user_defined'}
 \format{
-An object of class \code{character} of length 3.
+An object of class \code{numeric} of length 3.
 }
 \usage{
 adduct_type_default

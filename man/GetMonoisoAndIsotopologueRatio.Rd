@@ -7,7 +7,7 @@
 GetMonoisoAndIsotopologueRatio(
   glycan_lib,
   molecular_names,
-  molecular_formula_list = molecular_formula_list_default,
+  molecular_formula_list,
   monosaccharides_names,
   threshold_iso_probalility
 )
