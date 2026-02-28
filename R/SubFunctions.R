@@ -509,13 +509,13 @@ PlotUnfilteredMsVaribles = function(msdata, ms_level, filter_method) {
     df_sorted = data.frame(index = seq_along(ms_v), value = sort(ms_v))
 
     p1 = ggplot2::ggplot(df_raw, ggplot2::aes(x = index, y = value)) +
-      ggplot2::geom_col(width = 1, fill = "black") +
+      ggplot2::geom_col(width = 0.9, fill = "#9FC1CC") +
       ggplot2::labs(x = "Index", y = i,  title = paste0('MS',ms_level , '_', i)) +
       ggplot2::theme_classic() +
       ggplot2::theme(legend.position = "none", plot.title = ggplot2::element_text(size = 12))
 
     p2 = ggplot2::ggplot(df_sorted, ggplot2::aes(x = index, y = value)) +
-      ggplot2::geom_col(width = 1, fill = "black") +
+      ggplot2::geom_col(width = 0.9, fill = "#9FC1CC") +
       ggplot2::labs(x = "Sorted_index", y = i,  title = paste0('MS',ms_level , '_', i, '_sorted')) +
       ggplot2::theme_classic() +
       ggplot2::theme(legend.position = "none", plot.title = ggplot2::element_text(size = 12))
@@ -608,8 +608,8 @@ PlotFilteredMsVaribles = function(msdata, ms_level, filter_threshold_value) {
 
 
     p1 = ggplot2::ggplot(df_raw, ggplot2::aes(x = index, y = value, fill = status)) +
-      ggplot2::geom_col(width = 1) +
-      ggplot2::scale_fill_manual(values = c("keep" = "black", "filtered" = "grey"),
+      ggplot2::geom_col(width = 0.9) +
+      ggplot2::scale_fill_manual(values = c("keep" = "#9FC1CC", "filtered" = "#FCF1E6"),
                         name = "Status"
                         ) +
       ggplot2::labs(x = "Index", y = i,  title = paste0('MS',ms_level , '_', i)) +
@@ -617,8 +617,8 @@ PlotFilteredMsVaribles = function(msdata, ms_level, filter_threshold_value) {
       ggplot2::theme(legend.position = "right", plot.title = ggplot2::element_text(size = 12))
 
     p2 = ggplot2::ggplot(df_sorted, ggplot2::aes(x = index, y = value, fill = status)) +
-      ggplot2::geom_col(width = 1) +
-      ggplot2::scale_fill_manual(values = c("keep" = "black", "filtered" = "grey"),
+      ggplot2::geom_col(width = 0.9) +
+      ggplot2::scale_fill_manual(values = c("keep" = "#9FC1CC", "filtered" = "#FCF1E6"),
                         name = "Status"
                         ) +
       ggplot2::labs(x = "Sorted_index", y = i,  title = paste0('MS',ms_level , '_', i, '_sorted')) +

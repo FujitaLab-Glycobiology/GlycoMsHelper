@@ -2589,7 +2589,7 @@ GetMS2SpectrumSimilarityScore = function(ms_data,
   top_anno = ComplexHeatmap::columnAnnotation(
     sqrt_TIC = ComplexHeatmap::anno_barplot(
       tic_values,
-      gp = grid::gpar(fill = "black", col = NA),
+      gp = grid::gpar(fill = "#1C1C1C", col = NA),
       border = FALSE, bar_width = 0.9,
       height = 8*cell_size,                    # 设置柱状图高度
       axis_param = list(side = "left", labels_rot = 0, gp = grid::gpar(fontsize = 8))
