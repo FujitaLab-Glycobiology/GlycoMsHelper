@@ -1023,8 +1023,10 @@ GetMonoisoAndIsotopologueRatio = function(glycan_lib,
   ratio_plot = ggplot2::ggplot(new_glycan_lib,
                                ggplot2::aes(x = theoretical_monoisotopic_mz,
                                             y = theoretical_monoisotopic_isotopologue_abundance_ratio,
-                                            color = factor(total_charge))) +
-    ggplot2::geom_point(size = 2, alpha = 0.8) +
+                                            color = factor(total_charge),
+                                            size = theoretical_monoisotopic_abundance)) +
+    ggplot2::geom_point(alpha = 0.8) +
+    ggplot2::scale_size_continuous(range = c(1.5, 5)) +
     ggplot2::scale_color_manual(
       values = c(
         "1" = sage_palette[3],
