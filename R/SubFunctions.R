@@ -920,8 +920,14 @@ GetSplineSegmentationNoise = function(denoising_detail, denoising_method, transf
       break_point = fit_lm_seg$psi[,"Est."]
 
       # linear and non_linear fitting
-      fit_lm_linear = stats::lm(y[1:break_point] ~ x_idx[1:break_point])
+      y_linear = y[1:break_point]
+      x_linear = x_idx[1:break_point]
+
+      fit_lm_linear = stats::lm(y_linear ~ x_linear)
+      # fit_lm_linear = stats::lm(y[1:break_point] ~ x_idx[1:break_point])
+
       sum_fit_lm_linear = summary(fit_lm_linear)
+
 
       x_non_linear = x_idx[(break_point+1):length(y)]
       x_idx_non_linear = non_linear_transform_fun(x_non_linear)
@@ -1091,8 +1097,14 @@ GetSegmentationNoise = function(denoising_detail, denoising_method, transform_fu
 
       break_point = fit_lm_seg$psi[,"Est."]
 
+
       # linear and non_linear fitting
-      fit_lm_linear = stats::lm(y[1:break_point] ~ x_idx[1:break_point])
+      y_linear = y[1:break_point]
+      x_linear = x_idx[1:break_point]
+
+      fit_lm_linear = stats::lm(y_linear ~ x_linear)
+      # fit_lm_linear = stats::lm(y[1:break_point] ~ x_idx[1:break_point])
+
       sum_fit_lm_linear = summary(fit_lm_linear)
 
       x_non_linear = x_idx[(break_point+1):length(y)]
