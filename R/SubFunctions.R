@@ -918,27 +918,27 @@ GetSplineSegmentationNoise = function(denoising_detail, denoising_method, transf
       }
 
       break_point = fit_lm_seg$psi[,"Est."]
+      threshold_idx = round(break_point)
 
       # linear and non_linear fitting
-      y_linear = y[1:break_point]
-      x_linear = x_idx[1:break_point]
+      y_linear = y[1:threshold_idx]
+      x_linear = x_idx[1:threshold_idx]
 
       fit_lm_linear = stats::lm(y_linear ~ x_linear)
-      # fit_lm_linear = stats::lm(y[1:break_point] ~ x_idx[1:break_point])
+      # fit_lm_linear = stats::lm(y[1:threshold_idx] ~ x_idx[1:threshold_idx])
 
       sum_fit_lm_linear = summary(fit_lm_linear)
 
 
-      x_non_linear = x_idx[(break_point+1):length(y)]
+      x_non_linear = x_idx[(threshold_idx+1):length(y)]
       x_idx_non_linear = non_linear_transform_fun(x_non_linear)
-      y_non_linear = y[(break_point+1):length(y)]
+      y_non_linear = y[(threshold_idx+1):length(y)]
 
       fit_lm_non_linear = stats::lm(y_non_linear ~ x_idx_non_linear)
       # fit_lm_non_linear = stats::lm(log(y_non_linear) ~ x2)
       sum_fit_lm_non_linear = summary(fit_lm_non_linear)
 
       # summary(fit_lm_seg)
-      threshold_idx = round(break_point)
 
       # check the threshold index
       if (!is.null(threshold_idx) && threshold_idx > 0 && threshold_idx < n_total) {
@@ -1096,27 +1096,26 @@ GetSegmentationNoise = function(denoising_detail, denoising_method, transform_fu
       }
 
       break_point = fit_lm_seg$psi[,"Est."]
-
+      threshold_idx = round(break_point)
 
       # linear and non_linear fitting
-      y_linear = y[1:break_point]
-      x_linear = x_idx[1:break_point]
+      y_linear = y[1:threshold_idx]
+      x_linear = x_idx[1:threshold_idx]
 
       fit_lm_linear = stats::lm(y_linear ~ x_linear)
-      # fit_lm_linear = stats::lm(y[1:break_point] ~ x_idx[1:break_point])
+      # fit_lm_linear = stats::lm(y[1:threshold_idx] ~ x_idx[1:threshold_idx])
 
       sum_fit_lm_linear = summary(fit_lm_linear)
 
-      x_non_linear = x_idx[(break_point+1):length(y)]
+      x_non_linear = x_idx[(threshold_idx+1):length(y)]
       x_idx_non_linear = non_linear_transform_fun(x_non_linear)
-      y_non_linear = y[(break_point+1):length(y)]
+      y_non_linear = y[(threshold_idx+1):length(y)]
 
       fit_lm_non_linear = stats::lm(y_non_linear ~ x_idx_non_linear)
       # fit_lm_non_linear = stats::lm(log(y_non_linear) ~ x2)
       sum_fit_lm_non_linear = summary(fit_lm_non_linear)
 
       # summary(fit_lm_seg)
-      threshold_idx = round(break_point)
 
       # check the threshold index
       if (!is.null(threshold_idx) && threshold_idx > 0 && threshold_idx < n_total) {
