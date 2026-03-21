@@ -651,6 +651,7 @@ ConstructGlycanLibrary = function(glycan_type = glycan_type_default,
   # create the adduct library
   # get the adduct combos
   temp_adduct_combos <- lapply(adduct_charge_state_list, function(x) 0:floor(max_charge_state / x))
+  #names(temp_adduct_combos) <- names(adduct_charge_state_list)
   adduct_combos_all_grids <- expand.grid(temp_adduct_combos)
 
 
@@ -658,14 +659,28 @@ ConstructGlycanLibrary = function(glycan_type = glycan_type_default,
   adduct_charges <- as.numeric(adduct_charge_state_list[colnames(adduct_matrix)])
   total_charges <- adduct_matrix %*% adduct_charges
 
-  adduct_combos_all_grids <- adduct_combos_all_grids[total_charges >= min_charge_state & total_charges <= max_charge_state, ]
-
-  # # get the number of monos and adducts
-  # mono_adduct_combos_full_num <- tidyr::crossing(monosaccharides_combos, adduct_combos_all_grids)
-  # mono_adduct_combos_full_num[[derivatization_type]] <- 1
 
 
-  adduct_combos_all_grids$total_charge <- total_charges[total_charges >= min_charge_state & total_charges <= max_charge_state]
+
+  # adduct_combos_all_grids <- adduct_combos_all_grids[total_charges >= min_charge_state & total_charges <= max_charge_state, ]
+  #
+  # # # get the number of monos and adducts
+  # # mono_adduct_combos_full_num <- tidyr::crossing(monosaccharides_combos, adduct_combos_all_grids)
+  # # mono_adduct_combos_full_num[[derivatization_type]] <- 1
+  #
+  # adduct_combos_all_grids$total_charge <- total_charges[total_charges >= min_charge_state & total_charges <= max_charge_state]
+  #
+  #
+
+
+  keep <- total_charges >= min_charge_state & total_charges <= max_charge_state
+  adduct_combos_all_grids <- adduct_combos_all_grids[keep, , drop = FALSE]
+  adduct_combos_all_grids$total_charge <- total_charges[keep]
+  rownames(adduct_combos_all_grids) <- NULL
+
+
+
+
 
   # get the monos and adducts combos
   mono_adduct_combos_full <- tidyr::crossing(monosaccharides_combos, adduct_combos_all_grids)
@@ -684,7 +699,10 @@ ConstructGlycanLibrary = function(glycan_type = glycan_type_default,
   glycan_monosaccharides_lib = mono_adduct_combos_full
 
   # get the monoisotopic weight
-  full_weight_vector <- c(weight_vector, "ProA" = unname(derivatization_monoisotopic_weight))
+  #full_weight_vector <- c(weight_vector, "ProA" = unname(derivatization_monoisotopic_weight))
+  deriv_entry <- c(derivatization_monoisotopic_weight)
+  names(deriv_entry) <- derivatization_type
+  full_weight_vector <- c(weight_vector, deriv_entry)
 
   calc_cols <- names(full_weight_vector)
 
