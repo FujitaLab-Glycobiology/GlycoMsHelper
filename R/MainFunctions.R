@@ -527,8 +527,8 @@ ConstructGlycanLibrary = function(glycan_type = glycan_type_default,
                          TRUE)
         ) |>
         dplyr::filter(
-          dplyr::if_else(HexNAc == 2,
-                         Hex %in% 1:3 & dHex <= 1 & dplyr::if_all(-dplyr::any_of(c("Hex", "HexNAc", "dHex")), ~ .x == 0),
+          dplyr::if_else(HexNAc == 2 & Hex %in% 1:3,
+                         dHex <= 1 & dplyr::if_all(-dplyr::any_of(c("Hex", "HexNAc", "dHex")), ~ .x == 0),
                          TRUE)
         )
 
@@ -546,8 +546,8 @@ ConstructGlycanLibrary = function(glycan_type = glycan_type_default,
                          TRUE)
           ) |>
         dplyr::filter(
-          dplyr::if_else(HexNAc == 2,
-                         Hex %in% 1:3 & dHex <= 1 & dplyr::if_all(-dplyr::any_of(c("Hex", "HexNAc", "dHex")), ~ .x == 0),
+          dplyr::if_else(HexNAc == 2 & Hex %in% 1:3,
+                         dHex <= 1 & dplyr::if_all(-dplyr::any_of(c("Hex", "HexNAc", "dHex")), ~ .x == 0),
                          TRUE)
           )
 
