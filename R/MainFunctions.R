@@ -515,15 +515,42 @@ ConstructGlycanLibrary = function(glycan_type = glycan_type_default,
 
     # apply N-glycan rules
     if ('Neu5Gc' %in% colnames(monosaccharides_combos)) {
-      monosaccharides_combos = dplyr::filter(monosaccharides_combos,
-                                             dplyr::if_else(Neu5Ac > 0 | HexA > 0 | Neu5Gc > 0,
-                                                            Hex >= 3 & HexNAc >= 3,
-                                                            TRUE)
-      )
+      monosaccharides_combos = monosaccharides_combos |>
+        dplyr::filter(
+          dplyr::if_else(Neu5Ac > 0 | HexA > 0 | Neu5Gc > 0,
+                         Hex >= 3 & HexNAc >= 3 & ((HexNAc-2) >= (Neu5Ac + HexA + Neu5Gc)),
+                         TRUE)
+          )  |>
+        dplyr::filter(
+          dplyr::if_else(dHex >=1 & !(Hex %in% 1:3),
+                         (HexNAc + Hex -5+1) >= dHex,
+                         TRUE)
+        ) |>
+        dplyr::filter(
+          dplyr::if_else(Hex %in% 1:3,
+                         HexNAc == 2 & dHex <= 1 & dplyr::if_all(-dplyr::any_of(c("Hex", "HexNAc", "dHex")), ~ .x == 0),
+                         TRUE)
+        )
+
+
     } else {
-      monosaccharides_combos = dplyr::filter(
-        monosaccharides_combos, dplyr::if_else(Neu5Ac > 0 | HexA > 0, Hex >= 3 & HexNAc >= 3, TRUE)
-      )
+      monosaccharides_combos = monosaccharides_combos |>
+        dplyr::filter(
+          dplyr::if_else(Neu5Ac > 0 | HexA > 0,
+                         Hex >= 3 & HexNAc >= 3 & ((HexNAc-2) >= (Neu5Ac + HexA)),
+                         TRUE)
+          ) |>
+        dplyr::filter(
+          dplyr::if_else(dHex >=1 & !(Hex %in% 1:3),
+                         (HexNAc + Hex -5+1) >= dHex,
+                         TRUE)
+          ) |>
+        dplyr::filter(
+          dplyr::if_else(Hex %in% 1:3,
+                         HexNAc == 2 & dHex <= 1 & dplyr::if_all(-dplyr::any_of(c("Hex", "HexNAc", "dHex")), ~ .x == 0),
+                         TRUE)
+          )
+
     }
 
 
@@ -2575,18 +2602,33 @@ GetMS2SpectrumSimilarityScore = function(ms_data,
   normalized_matrix <- centered_intensity_matrix / norms
   similarity_matrix <- normalized_matrix %*% t(normalized_matrix)
 
+  # col_fun = circlize::colorRamp2(
+  #   seq(from = 0, to = 1, length.out = 10),
+  #   c('white',
+  #     '#ffffcc',
+  #     '#ffefa5',
+  #     '#fedd7f',
+  #     '#febf5a',
+  #     '#fd9d43',
+  #     '#fd7134',
+  #     '#f43d25',
+  #     '#db141e',
+  #     '#b60026')
+  # )
   col_fun = circlize::colorRamp2(
     seq(from = 0, to = 1, length.out = 10),
-    c('white',
-      '#ffffcc',
-      '#ffefa5',
-      '#fedd7f',
-      '#febf5a',
-      '#fd9d43',
-      '#fd7134',
-      '#f43d25',
-      '#db141e',
-      '#b60026')
+    c(
+      '#fdfdfd',
+      '#f7e9e9',
+      '#f0d2d2',
+      '#e8bcbc',
+      '#dfa5a5',
+      '#d68e8e',
+      '#cc7676',
+      '#c25e5e',
+      '#b84545',
+      '#ad2a2a'
+    )
   )
 
   # tic_aligned = dplyr::filter(spectrum_matching_result, ms2_spectrum_id %in% colnames(similarity_matrix))
@@ -2611,7 +2653,7 @@ GetMS2SpectrumSimilarityScore = function(ms_data,
       tic_values,
       gp = grid::gpar(fill = "#1C1C1C", col = NA),
       border = FALSE, bar_width = 0.9,
-      height = 8*cell_size,                    # 设置柱状图高度
+      height = 8*cell_size,
       axis_param = list(side = "left", labels_rot = 0, gp = grid::gpar(fontsize = 8))
     ),
     annotation_name_side = "left",
