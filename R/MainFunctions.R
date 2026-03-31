@@ -574,6 +574,110 @@ ConstructGlycanLibrary = function(glycan_type = glycan_type_default,
 
   } else if (glycan_type == 'O_glycan') {
 
+    O_glycan_std_monosaccharides = c('Hex', 'HexNAc', 'dHex', 'Neu5Ac', 'HexA', 'Neu5Gc')
+
+    if (complete_customized_monosaccharides) {
+
+      specific_glycan_monosaccharides_list = monosaccharides_additional_customized_list
+      specific_glycan_monosaccharides_list[O_glycan_std_monosaccharides] = monosaccharides_list[O_glycan_std_monosaccharides]
+
+      monosaccharides_combos = MakeAllMonosCombos(specific_glycan_monosaccharides_list,
+                                                  min_num_custom = min_num_monosaccharides_additional_customized_list,
+                                                  max_num_custom = max_num_monosaccharides_additional_customized_list,
+                                                  minmax_map = default_minmax_map)
+
+    } else {
+      # create list of sequences for expand.grid
+      seq_list = lapply(O_glycan_std_monosaccharides, function(x) {
+        seq(from = default_minmax_map[[x]][1], to = default_minmax_map[[x]][2], by = 1)
+      })
+
+      for (i in O_glycan_std_monosaccharides) {
+        if (default_minmax_map[[i]][1] > default_minmax_map[[i]][2]) {
+          stop(sprintf("Invalid range (min > max) for monosaccharide(s): %s.", i),
+               call. = FALSE)
+        }
+      }
+      names(seq_list) = paste0(O_glycan_std_monosaccharides)
+
+      monosaccharides_combos = expand.grid(seq_list, KEEP.OUT.ATTRS = FALSE, stringsAsFactors = FALSE)
+
+      specific_glycan_monosaccharides_list = monosaccharides_list[O_glycan_std_monosaccharides]
+    }
+
+    monosaccharides_combos = dplyr::filter(monosaccharides_combos,
+                                           rowSums(dplyr::across(dplyr::where(is.numeric))) >= min_total_monosaccharides_num & rowSums(dplyr::across(dplyr::where(is.numeric))) <= max_total_monosaccharides_num)
+
+    # apply O-glycan rules
+    if ('Neu5Gc' %in% colnames(monosaccharides_combos)) {
+      monosaccharides_combos = monosaccharides_combos |>
+        dplyr::filter(
+          dplyr::if_else(Neu5Ac > 0 | Neu5Gc > 0,
+                         (Hex + HexNAc + 1) >= (Neu5Ac + Neu5Gc) & Hex >= 1 & HexNAc >= 1,
+                         TRUE)
+        ) |>
+        dplyr::filter(
+          dplyr::if_else(Hex >= 0,
+                         (HexNAc + 1) >= Hex,
+                         TRUE)
+        ) |>
+        dplyr::filter(
+          dplyr::if_else(dHex >= 0,
+                         (Hex + HexNAc) >= dHex,
+                         TRUE)
+        ) |>
+        dplyr::filter(
+          dplyr::if_else(Neu5Ac > 0 | Neu5Gc > 0 | dHex >= 0,
+                         (Hex + HexNAc) >= (Neu5Ac + Neu5Gc + dHex),
+                         TRUE)
+        ) |>
+        dplyr::filter(
+          dplyr::if_else(HexA > 0,
+                         Hex >= HexA & Hex >= 1 & HexNAc >= 1,
+                         TRUE)
+        )
+
+    } else {
+
+      monosaccharides_combos = monosaccharides_combos |>
+        dplyr::filter(
+          dplyr::if_else(Neu5Ac > 0,
+                         (Hex + HexNAc + 1) >= Neu5Ac & Hex >= 1 & HexNAc >= 1,
+                         TRUE)
+        ) |>
+        dplyr::filter(
+          dplyr::if_else(Hex >= 0,
+                         (HexNAc + 1) >= Hex,
+                         TRUE)
+        ) |>
+        dplyr::filter(
+          dplyr::if_else(dHex >= 0,
+                         (Hex + HexNAc) >= dHex,
+                         TRUE)
+        ) |>
+        dplyr::filter(
+          dplyr::if_else(Neu5Ac > 0 | dHex >= 0,
+                         (Hex + HexNAc) >= (Neu5Ac + dHex),
+                         TRUE)
+        ) |>
+        dplyr::filter(
+          dplyr::if_else(HexA > 0,
+                         Hex >= HexA & Hex >= 1 & HexNAc >= 1,
+                         TRUE)
+        )
+
+    }
+
+
+    if (dim(monosaccharides_combos)[1] <= 0) {
+      stop("Can NOT find any monosaccharides combinations that fullfill the criteria of O-glycan. ",
+           call. = FALSE)
+    }
+
+
+
+
+
   } else if (glycan_type == 'GPI') {
 
     GPI_std_monosaccharides = c('Hex', 'HexNAc', 'Neu5Ac', 'Neu5Gc')
@@ -605,9 +709,23 @@ ConstructGlycanLibrary = function(glycan_type = glycan_type_default,
 
     # apply GPI rules
     if ('Neu5Gc' %in% colnames(monosaccharides_combos)) {
-      monosaccharides_combos = dplyr::filter(monosaccharides_combos, dplyr::if_else(Neu5Ac > 0 | Neu5Gc > 0, Hex >= 4, TRUE)) |>
-        dplyr::filter(dplyr::if_else(EtNP > 0, Hex >= EtNP, TRUE)) |>
-        dplyr::filter(dplyr::if_else(Hex == 5, HexNAc == 1, TRUE))
+      monosaccharides_combos = monosaccharides_combos |>
+        dplyr::filter(
+          dplyr::if_else(Neu5Ac > 0 | Neu5Gc > 0,
+                         Hex >= 4,
+                         TRUE)
+          ) |>
+        dplyr::filter(
+          dplyr::if_else(EtNP > 0,
+                         Hex >= EtNP,
+                         TRUE)
+          ) |>
+        dplyr::filter(
+          dplyr::if_else(
+            Hex == 5,
+            HexNAc == 1,
+            TRUE)
+          )
 
     } else {
       monosaccharides_combos = dplyr::filter(monosaccharides_combos, dplyr::if_else(Neu5Ac > 0, Hex >= 4, TRUE)) |>
