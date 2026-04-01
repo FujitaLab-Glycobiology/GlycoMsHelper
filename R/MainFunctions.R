@@ -275,7 +275,7 @@ ConstructGlycanLibrary = function(glycan_type = glycan_type_default,
 
 
   derivatization_list = c(ProA = 237.1841124,
-                          AB = 122.0843983,
+                          AB = 138.0793129,
                           PA = 96.068761)
 
 

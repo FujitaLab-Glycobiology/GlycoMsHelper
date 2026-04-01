@@ -147,7 +147,7 @@ molecular_formula_all = c(
   AHM = 'C6H8O4', 
   # label
   ProA = 'C13H23N3O1', 
-  AB = 'C7H10N2', 
+  AB = 'C7H10N2O1', 
   PA = 'C5H8N2', 
   # adduct
   H = 'H1',
