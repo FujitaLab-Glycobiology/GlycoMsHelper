@@ -778,9 +778,29 @@ ConstructGlycanLibrary = function(glycan_type = glycan_type_default,
     monosaccharides_combos = dplyr::filter(monosaccharides_combos,
                                            rowSums(dplyr::across(dplyr::where(is.numeric))) >= min_total_monosaccharides_num & rowSums(dplyr::across(dplyr::where(is.numeric))) <= max_total_monosaccharides_num)
 
+
     # apply GSL rules
-    monosaccharides_combos = dplyr::filter(monosaccharides_combos, dplyr::if_else(dHex >= 1, Hex >= 3, TRUE)) |>
-      dplyr::filter(dplyr::if_else(HexNAc >= 3, Hex >= 2, TRUE))
+    monosaccharides_combos = monosaccharides_combos |>
+      dplyr::filter(
+        dplyr::if_else(dHex >= 1,
+                       Hex >= 3,
+                       TRUE)
+      ) |>
+      dplyr::filter(
+        dplyr::if_else(HexNAc >= 3,
+                       Hex >= 2,
+                       TRUE)
+      ) |>
+      dplyr::filter(
+        dplyr::if_else(dHex > 0,
+                       dHex <= Hex - 2,
+                       TRUE)
+      ) |>
+      dplyr::filter(
+        dplyr::if_else(HexNAc >= 1,
+                       Hex - HexNAc >= 1,
+                       TRUE)
+      )
 
     if (dim(monosaccharides_combos)[1] <= 0) {
       stop("Can NOT find any monosaccharides combinations that fullfill the criteria of GSL. ",
