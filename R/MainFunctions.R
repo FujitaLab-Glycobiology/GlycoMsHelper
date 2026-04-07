@@ -800,6 +800,11 @@ ConstructGlycanLibrary = function(glycan_type = glycan_type_default,
         dplyr::if_else(HexNAc >= 1,
                        Hex - HexNAc >= 1,
                        TRUE)
+      ) |>
+      dplyr::filter(
+        dplyr::if_else(Neu5Ac + Neu5Gc >= 2,
+                       Hex >=2,
+                       TRUE)
       )
 
     if (dim(monosaccharides_combos)[1] <= 0) {
