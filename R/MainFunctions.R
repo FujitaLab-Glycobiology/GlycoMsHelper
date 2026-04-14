@@ -617,7 +617,7 @@ ConstructGlycanLibrary = function(glycan_type = glycan_type_default,
                          TRUE)
         ) |>
         dplyr::filter(
-          dplyr::if_else(Hex >= 0,
+          dplyr::if_else(Hex >= 0 & HexNAc > 0,
                          (HexNAc + 1) >= Hex,
                          TRUE)
         ) |>
@@ -646,7 +646,7 @@ ConstructGlycanLibrary = function(glycan_type = glycan_type_default,
                          TRUE)
         ) |>
         dplyr::filter(
-          dplyr::if_else(Hex >= 0,
+          dplyr::if_else(Hex >= 0 & HexNAc > 0,
                          (HexNAc + 1) >= Hex,
                          TRUE)
         ) |>
