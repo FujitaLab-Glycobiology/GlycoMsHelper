@@ -1,6 +1,8 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
+<img src="man/figures/logo.jpg" alt="" width="80%" style="display: block; margin: auto auto auto 0;" />
+
 # GlycoMsHelper
 
 <!-- badges: start -->

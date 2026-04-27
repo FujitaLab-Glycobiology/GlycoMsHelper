@@ -12,6 +12,9 @@ knitr::opts_chunk$set(
   out.width = "100%"
 )
 ```
+```{r, echo=FALSE, fig.align="left", out.width="80%"}
+knitr::include_graphics("man/figures/logo.jpg")
+```
 
 # GlycoMsHelper
 
