@@ -1,3 +1,6 @@
+GlycoMsHelper manual
+================
+Weize Kong and Morihisa Fujita
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
@@ -8,8 +11,10 @@
 <!-- badges: start -->
 <!-- badges: end -->
 
-The goal of GlycoMsHelper is to relieve you from labor-intensive
-glycomic MS data analysis.
+The goal of GlycoMsHelper is to relieve users from labor-intensive
+glycomic MS data analysis by enabling systematic extraction of
+glycan-derived spectra and generation of traceable candidate
+compositions for downstream validation.
 
 ## Installation
 
@@ -21,10 +26,7 @@ You can install the development version of GlycoMsHelper from
 devtools::install_github("FujitaLab-Glycobiology/GlycoMsHelper")
 ```
 
-## Example
-
-This is a basic example which shows you the basic workflow for
-GlycoMsHelper:
+## Basic workflow of GlycoMsHelper
 
 ### STEP1:
 
@@ -40,18 +42,63 @@ mass_spectrum_data = Spectra::Spectra(your_ms_file_path, source = MsBackendMzR()
 
 ### STEP2:
 
-Check the `.mzML` file.
+Check the MS (`.mzML`) file.
+
+Check the MS (`.mzML`) file to confirm the presence of MS2 spectra. If
+no MS2 spectrum is detected, the pipeline will terminate automatically
+to prevent downstream errors.
 
 ``` r
-GlycoMsHelper::MsFileChecker(mass_spectrum_data)
+GlycoMsHelper::MsFileChecker(mass_spectrum_data) 
 ```
 
 ### STEP3:
 
-Get the MS2 spectrum info likely to be glycan based on diagnostic ions.
+Quality control of the MS (`.mzML`) file
+
+The `SpectrumQcFilter` function performs quality control on MS data by
+evaluating three variables: peaks count (`peaksCount`), total ion
+current (`totIonCurrent`), and retention time (`rtime`).
+
+#### QC logic
+
+- `peaksCount` & `totIonCurrent`: Any scan with `peaksCount` or
+  `totIonCurrent` lower than the specified value is removed to eliminate
+  low-quality or noise-dominant spectrum.
+
+- `rtime`: Spectra are filtered using a defined temporal window. Only
+  MS1 and MS2 spectrum falling within the specified `rtime` range are
+  retained.
+
+#### QC method
+
+- `mean_sd`
+- `quantile_prob`
+- `start_end`
+
+#### Output
+
+``` text
+QC_result/
+|-- filtered_ms_data                  filtered MS data for next step or could be exported
+|-- pic_ms_varibles_filtered/
+    |-- MS1_peaksCount
+    |-- MS1_totIonCurrent
+    |-- MS1_rtime
+    |-- MS2_peaksCount
+    |-- MS2_totIonCurrent
+    |-- MS2_rtime
+|-- pic_ms_varibles_unfiltered/
+    |-- MS1_peaksCount
+    |-- MS1_totIonCurrent
+    |-- MS1_rtime
+    |-- MS2_peaksCount
+    |-- MS2_totIonCurrent
+    |-- MS2_rtime
+```
 
 ``` r
-# Optional: filter low quality MS1 and MS2 spectrums based on Spectra::spectraVariables()
+# filter low quality MS1 and MS2 spectrum based on Spectra::spectraVariables()
 qc_results = GlycoMsHelper::SpectrumQcFilter(
   ms_data = mass_spectrum_data, 
   filter_method_ms1 = c(peaksCount = 'mean_sd', totIonCurrent = 'quantile_prob', rtime = 'start_end'), 
@@ -62,9 +109,97 @@ qc_results = GlycoMsHelper::SpectrumQcFilter(
   )
                           
 mass_spectrum_data_filtered = qc_results$filtered_ms_data
+```
 
+#### Parameters
 
-# MS2 spectrum de-noising
+**`ms_data`**: the MS data will be used for the quality control.
+
+**`filter_method_ms1` and `filter_method_ms2`**: the QC method used for
+the MS1 spectrum and MS2 spectrum, respectively.
+
+- `mean_sd`: Adaptive threshold detection using the “knee point” method
+  - Method:
+    - Sorts the variable values in ascending order
+    - Calculates consecutive differences between sorted values
+    - Identifies significant jumps where: difference ≥ mean(all
+      differences) + n × sd(all differences), where `n` is defined in
+      `threshold_ms1`.
+    - Selects the position with the maximum jump as the cutoff threshold
+  - Parameter:
+    - `n` (defined in `threshold_ms1` and `threshold_ms2`) controls the
+      sensitivity. Higher `n`: stricter filtering (fewer jumps
+      detected). Lower `n`: moderate filtering (more jumps detected, the
+      biggest will be selected)
+  - Example:
+    - `filter_method_ms1 = c(peaksCount = 'mean_sd'), threshold_ms1 = list(peaksCount = 2)`:
+      Uses 2 standard deviations above mean difference as the detection
+      criterion.
+- `quantile_prob`: This method uses R’s internal `stats::quantile()`
+  function to define thresholds based on the statistical distribution of
+  your data.
+  - Method:
+    - Sorts the variable values in ascending order
+    - Calculates the specific quantiles to define lower and upper
+      boundaries for peaksCount, totIonCurrent, or rtime (use
+      `stats::quantile()` function).
+    - Applies these calculated quantiles as the threshold boundaries.
+  - Parameter:
+    - `c(lower bound, upper bound)` defining the range to be passed to
+      stats::quantile() (defined in `threshold_ms1` and
+      `threshold_ms2`).
+  - Example:
+  - `filter_method_ms1 = c(peaksCount = 'quantile_prob'), threshold_ms1 = list(peaksCount = c(0.1, 1))`:
+    sets the 10th percentile as the minimum threshold for peaksCount.
+- `start_end`: Fixed range filtering. This is a deterministic method
+  used when you have predefined limits.
+  - Method
+    - Directly compares variables against a hard-coded range.
+  - Parameter:
+    - `c(min value, max value)`, a vector of length 2.
+  - Example
+    - `filter_method_ms1 = c(rtime = 'start_end'), threshold_ms1 = list(rtime = c(8*60, 45*60))`:
+      restricts data to the time window between 8 and 45 minutes.
+
+**`threshold_ms1` and `threshold_ms2`**: the list vector for the QC
+method defined in `filter_method_ms1` and `filter_method_ms2`.
+
+- `mean_sd`:
+  - Parameter: `n`
+- `quantile_prob`:
+  - Parameter: `c(lower bound, upper bound)`
+- `start_end`:
+  - Parameter: `c(min value, max value)`
+
+**`plot_option`**: Set `plot_option = T` to include diagnostic plots in
+the output list. these plots visualize the distribution of variables
+before and after filtering, helping to verify the QC results.
+
+### STEP4:
+
+MS2 spectrum denoising
+
+The `MS2SpectrumDenoising` function performs denoising on every MS2
+spectrum for the MS data after QC.
+
+#### Denoising logic
+
+- `spline_segmentation_regression`, `spline_regression`,
+  `segmentation_regression`, and `quantile_prob`: Provide dynamic noise
+  threshold estimation for each of the MS2 spectrum.
+
+- `fixed_value`: Use the fixed noise threshold for every MS2 spectrum.
+
+#### Denoising method
+
+- `spline_segmentation_regression`
+- `spline_regression`
+- `segmentation_regression`
+- `quantile_prob`
+- `fixed_value`
+
+``` r
+# MS2 spectrum denoising
 ms2_denoising_info = list(
   spline_segmentation_regression = list(
     spar_start = -1.5, spar_end = 1.5, spar_step = 0.02, 
@@ -96,8 +231,83 @@ mass_spectrum_data_filtered_denoised = denoised_results$denoised_ms_data
 # export(mass_spectrum_data_filtered_denoised,
 #        backend = MsBackendMzR(),
 #        file = "your_ms_file_path_and_name.mzML", BPPARAM = SerialParam())
+```
 
+#### Parameters
 
+**`ms_data`**: MS data input for the denoising.
+
+**`ms2_spectrum_transform_method`**: define the non-linear signal
+transform method for MS2 spectrum. After signal transform, the noise
+threshold could be determined.
+
+- `log2_transform`: log2(x + 1) transform.
+- `asinh_transform`: asinh(x) transform
+- `non_transform`: the signal is not non-linear transformed, may not
+  suitable for the `spline_segmentation_regression`,
+  `spline_regression`, and `segmentation_regression`
+- `function(z)`: users defined function, could be any thing.
+  - Example: `ms2_spectrum_transform_method = function(z) log10(z + 1)`
+
+**`ms2_denoising_method`**
+
+- `spline_segmentation_regression`
+  - Method:
+
+  - Parameters:
+
+    - `spar_start`
+    - `spar_end`
+    - `spar_step`
+    - `RMSE_weight`
+    - `CV_weight`
+    - `D2_weight`
+    - `D1_weight`
+    - `use_cv`
+    - `top_n_to_remove`
+    - `segmentated_non_linear_transform_fun`
+
+  - Example:
+- `spline_regression`
+  - Method:
+
+  - Parameters:
+
+    - `spar_start`
+    - `spar_end`
+    - `spar_step`
+    - `RMSE_weight`
+    - `CV_weight`
+    - `D2_weight`
+    - `D1_weight`
+    - `use_cv`
+    - `top_n_to_remove`
+
+  - Example:
+- `segmentation_regression`
+  - Method:
+
+  - Parameters:
+
+    - `segmentated_non_linear_transform_fun`
+
+  - Example:
+- `quantile_prob`
+  - Method:
+
+  - Parameters:
+
+  - Example:
+- `fixed_value`
+  - Method:
+
+  - Parameters:
+
+  - Example:
+
+**`ms2_denoising_detail`**
+
+``` r
 # Find the spectrum likely to be glycan based on diagnostic ions 
 diagnostic_frags = c(
   HexNAc =              204.08667, 

@@ -1507,8 +1507,9 @@ SpectrumQcFilter = function(ms_data,
                 pic_ms_varibles_unfiltered = pic_ms_var_unfiltered)
     )
   } else {
-    return(list(filtered_ms_data = ms_clean,
-                pic_ms_varibles_unfiltered = pic_ms_var_unfiltered)
+    return(list(filtered_ms_data = ms_clean#,
+               #pic_ms_varibles_unfiltered = pic_ms_var_unfiltered
+                )
     )
   }
 
