@@ -82,19 +82,19 @@ current (`totIonCurrent`), and retention time (`rtime`).
 QC_result/
 |-- filtered_ms_data                  filtered MS data for next step or could be exported
 |-- pic_ms_varibles_filtered/
-    |-- MS1_peaksCount
-    |-- MS1_totIonCurrent
-    |-- MS1_rtime
-    |-- MS2_peaksCount
-    |-- MS2_totIonCurrent
-    |-- MS2_rtime
+  |-- MS1_peaksCount
+  |-- MS1_totIonCurrent
+  |-- MS1_rtime
+  |-- MS2_peaksCount
+  |-- MS2_totIonCurrent
+  |-- MS2_rtime
 |-- pic_ms_varibles_unfiltered/
-    |-- MS1_peaksCount
-    |-- MS1_totIonCurrent
-    |-- MS1_rtime
-    |-- MS2_peaksCount
-    |-- MS2_totIonCurrent
-    |-- MS2_rtime
+  |-- MS1_peaksCount
+  |-- MS1_totIonCurrent
+  |-- MS1_rtime
+  |-- MS2_peaksCount
+  |-- MS2_totIonCurrent
+  |-- MS2_rtime
 ```
 
 ``` r
@@ -113,67 +113,70 @@ mass_spectrum_data_filtered = qc_results$filtered_ms_data
 
 #### Parameters
 
-**`ms_data`**: the MS data will be used for the quality control.
+- **`ms_data`**: the MS data will be used for the quality control.
 
-**`filter_method_ms1` and `filter_method_ms2`**: the QC method used for
-the MS1 spectrum and MS2 spectrum, respectively.
+- **`filter_method_ms1` and `filter_method_ms2`**: the QC method used
+  for the MS1 spectrum and MS2 spectrum, respectively.
 
-- `mean_sd`: Adaptive threshold detection using the “knee point” method
-  - Method:
-    - Sorts the variable values in ascending order
-    - Calculates consecutive differences between sorted values
-    - Identifies significant jumps where: difference ≥ mean(all
-      differences) + n × sd(all differences), where `n` is defined in
-      `threshold_ms1`.
-    - Selects the position with the maximum jump as the cutoff threshold
-  - Parameter:
-    - `n` (defined in `threshold_ms1` and `threshold_ms2`) controls the
-      sensitivity. Higher `n`: stricter filtering (fewer jumps
-      detected). Lower `n`: moderate filtering (more jumps detected, the
-      biggest will be selected)
-  - Example:
-    - `filter_method_ms1 = c(peaksCount = 'mean_sd'), threshold_ms1 = list(peaksCount = 2)`:
-      Uses 2 standard deviations above mean difference as the detection
-      criterion.
-- `quantile_prob`: This method uses R’s internal `stats::quantile()`
-  function to define thresholds based on the statistical distribution of
-  your data.
-  - Method:
-    - Sorts the variable values in ascending order
-    - Calculates the specific quantiles to define lower and upper
-      boundaries for peaksCount, totIonCurrent, or rtime (use
-      `stats::quantile()` function).
-    - Applies these calculated quantiles as the threshold boundaries.
-  - Parameter:
-    - `c(lower bound, upper bound)` defining the range to be passed to
-      stats::quantile() (defined in `threshold_ms1` and
-      `threshold_ms2`).
-  - Example:
-  - `filter_method_ms1 = c(peaksCount = 'quantile_prob'), threshold_ms1 = list(peaksCount = c(0.1, 1))`:
-    sets the 10th percentile as the minimum threshold for peaksCount.
-- `start_end`: Fixed range filtering. This is a deterministic method
-  used when you have predefined limits.
-  - Method
-    - Directly compares variables against a hard-coded range.
-  - Parameter:
-    - `c(min value, max value)`, a vector of length 2.
-  - Example
-    - `filter_method_ms1 = c(rtime = 'start_end'), threshold_ms1 = list(rtime = c(8*60, 45*60))`:
-      restricts data to the time window between 8 and 45 minutes.
+  - `mean_sd`: Adaptive threshold detection using the “knee point”
+    method
+    - Method:
+      - Sorts the variable values in ascending order
+      - Calculates consecutive differences between sorted values
+      - Identifies significant jumps where: difference ≥ mean(all
+        differences) + n × sd(all differences), where `n` is defined in
+        `threshold_ms1`.
+      - Selects the position with the maximum jump as the cutoff
+        threshold
+    - Parameter:
+      - `n` (defined in `threshold_ms1` and `threshold_ms2`) controls
+        the sensitivity. Higher `n`: stricter filtering (fewer jumps
+        detected). Lower `n`: moderate filtering (more jumps detected,
+        the biggest will be selected)
+    - Example:
+      - `filter_method_ms1 = c(peaksCount = 'mean_sd'), threshold_ms1 = list(peaksCount = 2)`:
+        Uses 2 standard deviations above mean difference as the
+        detection criterion.
+  - `quantile_prob`: This method uses R’s internal `stats::quantile()`
+    function to define thresholds based on the statistical distribution
+    of your data.
+    - Method:
+      - Sorts the variable values in ascending order
+      - Calculates the specific quantiles to define lower and upper
+        boundaries for peaksCount, totIonCurrent, or rtime (use
+        `stats::quantile()` function).
+      - Applies these calculated quantiles as the threshold boundaries.
+    - Parameter:
+      - `c(lower bound, upper bound)` defining the range to be passed to
+        stats::quantile() (defined in `threshold_ms1` and
+        `threshold_ms2`).
+    - Example:
+    - `filter_method_ms1 = c(peaksCount = 'quantile_prob'), threshold_ms1 = list(peaksCount = c(0.1, 1))`:
+      sets the 10th percentile as the minimum threshold for peaksCount.
+  - `start_end`: Fixed range filtering. This is a deterministic method
+    used when you have predefined limits.
+    - Method
+      - Directly compares variables against a hard-coded range.
+    - Parameter:
+      - `c(min value, max value)`, a vector of length 2.
+    - Example
+      - `filter_method_ms1 = c(rtime = 'start_end'), threshold_ms1 = list(rtime = c(8*60, 45*60))`:
+        restricts data to the time window between 8 and 45 minutes.
 
-**`threshold_ms1` and `threshold_ms2`**: the list vector for the QC
-method defined in `filter_method_ms1` and `filter_method_ms2`.
+- **`threshold_ms1` and `threshold_ms2`**: the list vector for the QC
+  method defined in `filter_method_ms1` and `filter_method_ms2`.
 
-- `mean_sd`:
-  - Parameter: `n`
-- `quantile_prob`:
-  - Parameter: `c(lower bound, upper bound)`
-- `start_end`:
-  - Parameter: `c(min value, max value)`
+  - `mean_sd`:
+    - Parameter: `n`
+  - `quantile_prob`:
+    - Parameter: `c(lower bound, upper bound)`
+  - `start_end`:
+    - Parameter: `c(min value, max value)`
 
-**`plot_option`**: Set `plot_option = T` to include diagnostic plots in
-the output list. these plots visualize the distribution of variables
-before and after filtering, helping to verify the QC results.
+- **`plot_option`**: Set `plot_option = T` to include diagnostic plots
+  in the output list. these plots visualize the distribution of
+  variables before and after filtering, helping to verify the QC
+  results.
 
 ### STEP4:
 
@@ -235,77 +238,78 @@ mass_spectrum_data_filtered_denoised = denoised_results$denoised_ms_data
 
 #### Parameters
 
-**`ms_data`**: MS data input for the denoising.
+- **`ms_data`**: MS data input for the denoising.
 
-**`ms2_spectrum_transform_method`**: define the non-linear signal
-transform method for MS2 spectrum. After signal transform, the noise
-threshold could be determined.
+- **`ms2_spectrum_transform_method`**: define the non-linear signal
+  transform method for MS2 spectrum. After signal transform, the noise
+  threshold could be determined.
 
-- `log2_transform`: log2(x + 1) transform.
-- `asinh_transform`: asinh(x) transform
-- `non_transform`: the signal is not non-linear transformed, may not
-  suitable for the `spline_segmentation_regression`,
-  `spline_regression`, and `segmentation_regression`
-- `function(z)`: users defined function, could be any thing.
-  - Example: `ms2_spectrum_transform_method = function(z) log10(z + 1)`
+  - `log2_transform`: log2(x + 1) transform.
+  - `asinh_transform`: asinh(x) transform
+  - `non_transform`: the signal is not non-linear transformed, may not
+    suitable for the `spline_segmentation_regression`,
+    `spline_regression`, and `segmentation_regression`
+  - `function(z)`: users defined function, could be any thing.
+    - Example:
+      `ms2_spectrum_transform_method = function(z) log10(z + 1)`
 
-**`ms2_denoising_method`**
+- **`ms2_denoising_method`**
 
-- `spline_segmentation_regression`
-  - Method:
+  - `spline_segmentation_regression`
+    - Method:
 
-  - Parameters:
+    - Parameters:
 
-    - `spar_start`
-    - `spar_end`
-    - `spar_step`
-    - `RMSE_weight`
-    - `CV_weight`
-    - `D2_weight`
-    - `D1_weight`
-    - `use_cv`
-    - `top_n_to_remove`
-    - `segmentated_non_linear_transform_fun`
+      - `spar_start`
+      - `spar_end`
+      - `spar_step`
+      - `RMSE_weight`
+      - `CV_weight`
+      - `D2_weight`
+      - `D1_weight`
+      - `use_cv`
+      - `top_n_to_remove`
+      - `segmentated_non_linear_transform_fun`
 
-  - Example:
-- `spline_regression`
-  - Method:
+    - Example:
+  - `spline_regression`
+    - Method:
 
-  - Parameters:
+    - Parameters:
 
-    - `spar_start`
-    - `spar_end`
-    - `spar_step`
-    - `RMSE_weight`
-    - `CV_weight`
-    - `D2_weight`
-    - `D1_weight`
-    - `use_cv`
-    - `top_n_to_remove`
+      - `spar_start`
+      - `spar_end`
+      - `spar_step`
+      - `RMSE_weight`
+      - `CV_weight`
+      - `D2_weight`
+      - `D1_weight`
+      - `use_cv`
+      - `top_n_to_remove`
 
-  - Example:
-- `segmentation_regression`
-  - Method:
+    - Example:
+  - `segmentation_regression`
+    - Method:
 
-  - Parameters:
+    - Parameters:
 
-    - `segmentated_non_linear_transform_fun`
+      - `segmentated_non_linear_transform_fun`
 
-  - Example:
-- `quantile_prob`
-  - Method:
+    - Example:
+  - `quantile_prob`
+    - Method:
 
-  - Parameters:
+    - Parameters:
 
-  - Example:
-- `fixed_value`
-  - Method:
+    - Example:
+  - `fixed_value`
+    - Method:
 
-  - Parameters:
+    - Parameters:
 
-  - Example:
+    - Example:
 
-**`ms2_denoising_detail`**
+- **`ms2_denoising_detail`**
 
 ``` r
 # Find the spectrum likely to be glycan based on diagnostic ions 

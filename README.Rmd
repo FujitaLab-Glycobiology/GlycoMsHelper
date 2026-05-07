@@ -80,19 +80,19 @@ Spectra are filtered using a defined temporal window. Only MS1 and MS2 spectrum 
 QC_result/
 |-- filtered_ms_data                  filtered MS data for next step or could be exported
 |-- pic_ms_varibles_filtered/
-    |-- MS1_peaksCount
-    |-- MS1_totIonCurrent
-    |-- MS1_rtime
-    |-- MS2_peaksCount
-    |-- MS2_totIonCurrent
-    |-- MS2_rtime
+  |-- MS1_peaksCount
+  |-- MS1_totIonCurrent
+  |-- MS1_rtime
+  |-- MS2_peaksCount
+  |-- MS2_totIonCurrent
+  |-- MS2_rtime
 |-- pic_ms_varibles_unfiltered/
-    |-- MS1_peaksCount
-    |-- MS1_totIonCurrent
-    |-- MS1_rtime
-    |-- MS2_peaksCount
-    |-- MS2_totIonCurrent
-    |-- MS2_rtime
+  |-- MS1_peaksCount
+  |-- MS1_totIonCurrent
+  |-- MS1_rtime
+  |-- MS2_peaksCount
+  |-- MS2_totIonCurrent
+  |-- MS2_rtime
 ```
 
 ```{r STEP3, eval = FALSE}
@@ -110,9 +110,9 @@ mass_spectrum_data_filtered = qc_results$filtered_ms_data
 ```
 
 #### Parameters
-**`ms_data`**: the MS data will be used for the quality control. 
+- **`ms_data`**: the MS data will be used for the quality control. 
 
-**`filter_method_ms1` and `filter_method_ms2`**: the QC method used for the MS1 spectrum and MS2 spectrum, respectively.
+- **`filter_method_ms1` and `filter_method_ms2`**: the QC method used for the MS1 spectrum and MS2 spectrum, respectively.
 
   - `mean_sd`: Adaptive threshold detection using the "knee point" method
     - Method:
@@ -143,7 +143,7 @@ mass_spectrum_data_filtered = qc_results$filtered_ms_data
     - Example
       - `filter_method_ms1 = c(rtime = 'start_end'), threshold_ms1 = list(rtime = c(8*60, 45*60))`: restricts data to the time window between 8 and 45 minutes.
 
-**`threshold_ms1` and `threshold_ms2`**: the list vector for the QC method defined in `filter_method_ms1` and `filter_method_ms2`.
+- **`threshold_ms1` and `threshold_ms2`**: the list vector for the QC method defined in `filter_method_ms1` and `filter_method_ms2`.
 
   - `mean_sd`:
     - Parameter: `n`
@@ -152,7 +152,7 @@ mass_spectrum_data_filtered = qc_results$filtered_ms_data
   - `start_end`:
     - Parameter: `c(min value, max value)`
 
-**`plot_option`**: Set `plot_option = T` to include diagnostic plots in the output list. these plots visualize the distribution of variables before and after filtering, helping to verify the QC results.
+- **`plot_option`**: Set `plot_option = T` to include diagnostic plots in the output list. these plots visualize the distribution of variables before and after filtering, helping to verify the QC results.
 
 
 ### STEP4: 
@@ -212,9 +212,9 @@ mass_spectrum_data_filtered_denoised = denoised_results$denoised_ms_data
 
 #### Parameters
 
-**`ms_data`**: MS data input for the denoising.
+- **`ms_data`**: MS data input for the denoising.
 
-**`ms2_spectrum_transform_method`**: define the non-linear signal transform method for MS2 spectrum. After signal transform, the noise threshold could be determined.
+- **`ms2_spectrum_transform_method`**: define the non-linear signal transform method for MS2 spectrum. After signal transform, the noise threshold could be determined.
 
   - `log2_transform`: log2(x + 1) transform. 
   - `asinh_transform`: asinh(x) transform
@@ -223,7 +223,7 @@ mass_spectrum_data_filtered_denoised = denoised_results$denoised_ms_data
     - Example: `ms2_spectrum_transform_method = function(z) log10(z + 1)`
 
 
-**`ms2_denoising_method`**
+- **`ms2_denoising_method`**
 
   - `spline_segmentation_regression`
     - Method:
@@ -293,7 +293,7 @@ mass_spectrum_data_filtered_denoised = denoised_results$denoised_ms_data
 
 
 
-**`ms2_denoising_detail`**
+- **`ms2_denoising_detail`**
 
 
 
