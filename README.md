@@ -9,6 +9,7 @@ Weize Kong and Morihisa Fujita
 # GlycoMsHelper
 
 <!-- badges: start -->
+
 <!-- badges: end -->
 
 The goal of GlycoMsHelper is to relieve users from labor-intensive
@@ -32,6 +33,8 @@ devtools::install_github("FujitaLab-Glycobiology/GlycoMsHelper")
 
 Load the package and read the `.mzML` file.
 
+#### Codes
+
 ``` r
 library(Spectra)
 library(GlycoMsHelper)
@@ -48,7 +51,10 @@ Check the MS (`.mzML`) file to confirm the presence of MS2 spectra. If
 no MS2 spectrum is detected, the pipeline will terminate automatically
 to prevent downstream errors.
 
+#### Codes
+
 ``` r
+# Check the MS file to confirm the presence of MS2 spectra. If no MS2 spectrum is detected, the pipeline will terminate automatically to prevent downstream errors.
 GlycoMsHelper::MsFileChecker(mass_spectrum_data) 
 ```
 
@@ -62,9 +68,9 @@ current (`totIonCurrent`), and retention time (`rtime`).
 
 #### QC logic
 
-- `peaksCount` & `totIonCurrent`: Any scan with `peaksCount` or
-  `totIonCurrent` lower than the specified value is removed to eliminate
-  low-quality or noise-dominant spectrum.
+- `peaksCount` & `totIonCurrent`: Scans with `peaksCount` or
+  `totIonCurrent` values below the specified threshold are removed to
+  exclude low-quality or noise-dominant spectrum.
 
 - `rtime`: Spectra are filtered using a defined temporal window. Only
   MS1 and MS2 spectrum falling within the specified `rtime` range are
@@ -72,111 +78,171 @@ current (`totIonCurrent`), and retention time (`rtime`).
 
 #### QC method
 
-- `mean_sd`
-- `quantile_prob`
-- `start_end`
+- `mean_sd`: adaptive threshold detection based on the distribution of
+  sorted variable differences.
+- `quantile_prob`: thresholding based on quantiles calculated using
+  stats::quantile().
+- `start_end`: fixed-range filtering using predefined lower and upper
+  boundaries.
 
 #### Output
 
 ``` text
-QC_result/
-|-- filtered_ms_data                  filtered MS data for next step or could be exported
-|-- pic_ms_varibles_filtered/
-  |-- MS1_peaksCount
-  |-- MS1_totIonCurrent
-  |-- MS1_rtime
-  |-- MS2_peaksCount
-  |-- MS2_totIonCurrent
-  |-- MS2_rtime
-|-- pic_ms_varibles_unfiltered/
-  |-- MS1_peaksCount
-  |-- MS1_totIonCurrent
-  |-- MS1_rtime
-  |-- MS2_peaksCount
-  |-- MS2_totIonCurrent
-  |-- MS2_rtime
+QC_result
+|-- filtered_ms_data                  Filtered MS data for next step or could be exported
+|-- pic_ms_varibles_filtered          Diagnostic plots showing the distributions of MS1 and MS2 variables after filtering.
+|   |                                 Filtered and retained spectra are shown in different colors.
+|   |                                 The upper plot shows variables ordered by retention time. 
+|   |                                 the lower plot shows variables sorted in ascending order.
+|   |-- MS1_peaksCount
+|   |-- MS1_totIonCurrent
+|   |-- MS1_rtime
+|   |-- MS2_peaksCount
+|   |-- MS2_totIonCurrent
+|   |-- MS2_rtime
+|-- pic_ms_varibles_unfiltered        Diagnostic plots showing the distributions of MS1 and MS2 variables before filtering.
+|   |                                 These plots can be used to determine appropriate QC methods and thresholds.
+|   |                                 The upper plot shows variables ordered by retention time.
+|   |                                 the lower plot shows variables sorted in ascending order.
+|   |-- MS1_peaksCount
+|   |-- MS1_totIonCurrent
+|   |-- MS1_rtime
+|   |-- MS2_peaksCount
+|   |-- MS2_totIonCurrent
+|   |-- MS2_rtime
 ```
+
+#### Codes
 
 ``` r
 # filter low quality MS1 and MS2 spectrum based on Spectra::spectraVariables()
 qc_results = GlycoMsHelper::SpectrumQcFilter(
   ms_data = mass_spectrum_data, 
-  filter_method_ms1 = c(peaksCount = 'mean_sd', totIonCurrent = 'quantile_prob', rtime = 'start_end'), 
-  threshold_ms1 = list(peaksCount = 2, totIonCurrent = c(0.05, 1), rtime = c(8*60, 45*60)), 
-  filter_method_ms2 = c(peaksCount = 'quantile_prob', totIonCurrent = 'quantile_prob', rtime = 'start_end'), 
-  threshold_ms2 = list(peaksCount = c(0.1, 1), totIonCurrent = c(0.05, 1), rtime = c(8*60, 50*60)), 
+  filter_method_ms1 = c(
+    peaksCount = 'mean_sd', 
+    totIonCurrent = 'quantile_prob', 
+    rtime = 'start_end'
+    ), 
+  threshold_ms1 = list(
+    peaksCount = 2, 
+    totIonCurrent = c(0.05, 1), 
+    rtime = c(8*60, 45*60)
+    ), 
+  filter_method_ms2 = c(
+    peaksCount = 'quantile_prob', 
+    totIonCurrent = 'quantile_prob', 
+    rtime = 'start_end'
+    ), 
+  threshold_ms2 = list(
+    peaksCount = c(0.1, 1), 
+    totIonCurrent = c(0.05, 1), 
+    rtime = c(8*60, 50*60)
+    ), 
   plot_option = T
-  )
+)
                           
 mass_spectrum_data_filtered = qc_results$filtered_ms_data
 ```
 
 #### Parameters
 
-- **`ms_data`**: the MS data will be used for the quality control.
+- **`ms_data`** The MS data will be used for the quality control.
 
-- **`filter_method_ms1` and `filter_method_ms2`**: the QC method used
-  for the MS1 spectrum and MS2 spectrum, respectively.
+- **`filter_method_ms1` and `filter_method_ms2`** Named character
+  vectors specifying the QC method used for each MS1 and MS2 spectrum
+  variable, respectively.
 
-  - `mean_sd`: Adaptive threshold detection using the “knee point”
+  - **`mean_sd`**: Adaptive threshold detection using the “knee point”
     method
-    - Method:
-      - Sorts the variable values in ascending order
-      - Calculates consecutive differences between sorted values
-      - Identifies significant jumps where: difference ≥ mean(all
-        differences) + n × sd(all differences), where `n` is defined in
-        `threshold_ms1`.
-      - Selects the position with the maximum jump as the cutoff
-        threshold
-    - Parameter:
-      - `n` (defined in `threshold_ms1` and `threshold_ms2`) controls
-        the sensitivity. Higher `n`: stricter filtering (fewer jumps
-        detected). Lower `n`: moderate filtering (more jumps detected,
-        the biggest will be selected)
-    - Example:
-      - `filter_method_ms1 = c(peaksCount = 'mean_sd'), threshold_ms1 = list(peaksCount = 2)`:
-        Uses 2 standard deviations above mean difference as the
-        detection criterion.
-  - `quantile_prob`: This method uses R’s internal `stats::quantile()`
-    function to define thresholds based on the statistical distribution
-    of your data.
-    - Method:
-      - Sorts the variable values in ascending order
-      - Calculates the specific quantiles to define lower and upper
+
+    **Method:**
+
+    1.  Sorts the variable values in ascending order
+    2.  Calculates consecutive differences between sorted values
+    3.  Identifies significant jumps using the following criterion:
+        `difference >= mean(all differences) + n * sd(all differences)`,
+        where `n` is defined in `threshold_ms1` or `threshold_ms2`.
+    4.  Select the position with the maximum significant jump as the
+        cutoff threshold.
+
+    **Parameter:**
+
+    - `n`: controls the sensitivity of jump detection. Higher `n`: fewer
+      candidate jumps considered  
+      Lower `n`: more candidate jumps considered
+
+    **Example:**
+
+    ``` r
+    filter_method_ms1 = c(peaksCount = "mean_sd")
+    threshold_ms1 = list(peaksCount = 2)
+    ```
+
+    This uses two standard deviations above the mean difference as the
+    criterion for detecting a significant jump.
+
+  - **`quantile_prob`**: Quantile-based filtering using R’s internal
+    `stats::quantile()` function.
+
+    **Method:**
+
+    1.  Sorts the variable values in ascending order
+    2.  Calculates the specific quantiles to define lower and upper
         boundaries for peaksCount, totIonCurrent, or rtime (use
-        `stats::quantile()` function).
-      - Applies these calculated quantiles as the threshold boundaries.
-    - Parameter:
-      - `c(lower bound, upper bound)` defining the range to be passed to
-        stats::quantile() (defined in `threshold_ms1` and
-        `threshold_ms2`).
-    - Example:
-    - `filter_method_ms1 = c(peaksCount = 'quantile_prob'), threshold_ms1 = list(peaksCount = c(0.1, 1))`:
-      sets the 10th percentile as the minimum threshold for peaksCount.
-  - `start_end`: Fixed range filtering. This is a deterministic method
-    used when you have predefined limits.
-    - Method
-      - Directly compares variables against a hard-coded range.
-    - Parameter:
-      - `c(min value, max value)`, a vector of length 2.
-    - Example
-      - `filter_method_ms1 = c(rtime = 'start_end'), threshold_ms1 = list(rtime = c(8*60, 45*60))`:
-        restricts data to the time window between 8 and 45 minutes.
+        `stats::quantile()` function)
+    3.  Applies these calculated quantiles as lower and upper threshold
+        boundaries.
+
+    **Parameter:**
+
+    - `c(lower bound, upper bound)` a numeric vector defining the
+      quantile probabilities passed to `stats::quantile()` (defined in
+      `threshold_ms1` and `threshold_ms2`).
+
+    **Example:**
+
+    ``` r
+    filter_method_ms1 = c(peaksCount = "quantile_prob")
+    threshold_ms1 = list(peaksCount = c(0.1, 1))
+    ```
+
+    This uses the 10th percentile as the minimum threshold for
+    `peaksCount`.
+
+  - **`start_end`**: Fixed range filtering. This is a deterministic
+    method used when you have predefined limits.
+
+    **Method**
+
+    1.  Directly compares variables against a hard-coded range.
+
+    **Parameter:**
+
+    - `c(min value, max value)`, a vector of length 2.
+
+    **Example:**
+
+    ``` r
+    filter_method_ms1 = c(rtime = "start_end")
+    threshold_ms1 = list(rtime = c(8 * 60, 45 * 60))
+    ```
+
+    This restricts the data to spectra acquired between 8 and 45
+    minutes.
 
 - **`threshold_ms1` and `threshold_ms2`**: the list vector for the QC
   method defined in `filter_method_ms1` and `filter_method_ms2`.
 
-  - `mean_sd`:
-    - Parameter: `n`
-  - `quantile_prob`:
-    - Parameter: `c(lower bound, upper bound)`
-  - `start_end`:
-    - Parameter: `c(min value, max value)`
+  - For `mean_sd`, the parameter is `n`.
+  - For `quantile_prob`, the parameter is `c(lower_bound, upper_bound)`.
+  - For `start_end`, the parameter is `c(min_value, max_value)`.
 
 - **`plot_option`**: Set `plot_option = T` to include diagnostic plots
-  in the output list. these plots visualize the distribution of
-  variables before and after filtering, helping to verify the QC
-  results.
+  in the output list. These plots visualize the distribution of MS1 and
+  MS2 spectrum variables after filtering, which could be used to verify
+  the QC results, filtered variables and left variables are in different
+  color. The upper plot is variables sorted in time, the lower plot is
+  variables sorted in ascending order.
 
 ### STEP4:
 
