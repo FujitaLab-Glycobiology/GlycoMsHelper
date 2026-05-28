@@ -166,9 +166,13 @@ mass_spectrum_data_filtered = qc_results$filtered_ms_data
     4.  Select the position with the maximum significant jump as the
         cutoff threshold.
 
-    **Parameter:** \| \| \| \|——\|——\| \| `n` \| Sensitivity of jump
-    detection. Higher `n` → fewer candidate jumps; lower `n` → more
-    candidate jumps. \| **Example:**
+    **Parameter:**
+
+    |  |  |
+    |----|----|
+    | `c(min, max)` | A length-2 numeric vector specifying the lower and upper bounds. |
+
+    **Example:**
 
     ``` r
     filter_method_ms1 = c(peaksCount = "mean_sd")
@@ -190,10 +194,13 @@ mass_spectrum_data_filtered = qc_results$filtered_ms_data
     3.  Applies these calculated quantiles as lower and upper threshold
         boundaries.
 
-    **Parameter:** \|——\|————-\| \| `c(lower bound, upper bound)` \|
-    Probability vector passed to `stats::quantile()`, defining the lower
-    and upper quantile bounds (set via `threshold_ms1` /
-    `threshold_ms2`). \| **Example:**
+    **Parameter:**
+
+    |  |  |
+    |----|----|
+    | `c(lower bound, upper bound)` | Probability vector passed to `stats::quantile()`, defining the lower and upper quantile bounds (set via `threshold_ms1` / `threshold_ms2`). |
+
+    **Example:**
 
     ``` r
     filter_method_ms1 = c(peaksCount = "quantile_prob")
@@ -210,8 +217,13 @@ mass_spectrum_data_filtered = qc_results$filtered_ms_data
 
     1.  Directly compares variables against a hard-coded range.
 
-    **Parameter:** \|——\|————-\| \| `c(min, max)` \| A length-2 numeric
-    vector specifying the lower and upper bounds. \| **Example:**
+    **Parameter:**
+
+    |  |  |
+    |----|----|
+    | `c(min, max)` | A length-2 numeric vector specifying the lower and upper bounds. |
+
+    **Example:**
 
     ``` r
     filter_method_ms1 = c(rtime = "start_end")

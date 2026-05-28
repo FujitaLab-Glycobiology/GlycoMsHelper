@@ -145,16 +145,19 @@ mass_spectrum_data_filtered = qc_results$filtered_ms_data
   - **`mean_sd`**: Adaptive threshold detection using the "knee point" method 
   
     **Method:**
+    
     1. Sort the variable values in ascending order
     2. Calculate consecutive differences between sorted values
     3. Identifies significant jumps using the following criterion: 
       `difference >= mean(all differences) + n * sd(all differences)`, where `n` is defined in `threshold_ms1` or `threshold_ms2`.
     4. Select the position with the maximum significant jump as the cutoff threshold. 
     
-    **Parameter:** 
-      |   |   |
-      |------|------|
-      | `n`  | Sensitivity of jump detection. Higher `n` → fewer candidate jumps; lower `n` → more candidate jumps. |
+    **Parameter:**
+    
+    |  |  |
+    |-----------|-------------|
+    | `c(min, max)` | A length-2 numeric vector specifying the lower and upper bounds. | 
+    
     **Example:**
     
     ```r
@@ -170,9 +173,12 @@ mass_spectrum_data_filtered = qc_results$filtered_ms_data
     2. Calculate the specific quantiles to define lower and upper boundaries for peaksCount, totIonCurrent, or rtime (use `stats::quantile()` function)
     3. Applies these calculated quantiles as lower and upper threshold boundaries. 
     
-    **Parameter:**
-      |------|-------------|
+    **Parameter:** 
+    
+      |  |  |
+      |------|------------|
       | `c(lower bound, upper bound)` | Probability vector passed to `stats::quantile()`, defining the lower and upper quantile bounds (set via `threshold_ms1` / `threshold_ms2`). | 
+      
     **Example:** 
     
     ```r
@@ -187,8 +193,11 @@ mass_spectrum_data_filtered = qc_results$filtered_ms_data
     1. Directly compares variables against a hard-coded range.
     
     **Parameter:**
-      |------|-------------|
+    
+      |  |  |
+      |------|------------|
       | `c(min, max)` | A length-2 numeric vector specifying the lower and upper bounds. | 
+      
     **Example:** 
     
     ```r
