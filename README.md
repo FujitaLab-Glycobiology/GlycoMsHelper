@@ -156,49 +156,44 @@ mass_spectrum_data_filtered = qc_results$filtered_ms_data
   - **`mean_sd`**: Adaptive threshold detection using the “knee point”
     method
 
-    - Method:  
+    **Method:**
 
-    1.  Sorts the variable values in ascending order
-    2.  Calculates consecutive differences between sorted values
+    1.  Sort the variable values in ascending order
+    2.  Calculate consecutive differences between sorted values
     3.  Identifies significant jumps using the following criterion:
         `difference >= mean(all differences) + n * sd(all differences)`,
         where `n` is defined in `threshold_ms1` or `threshold_ms2`.
     4.  Select the position with the maximum significant jump as the
         cutoff threshold.
 
-    - Parameter:
-      - `n`: controls the sensitivity of jump detection. Higher `n`:
-        fewer candidate jumps considered  
-        Lower `n`: more candidate jumps considered
-    - Example:
+    **Parameter:** \|——\|——\| \| `n` \| Sensitivity of jump detection.
+    Higher `n` → fewer candidate jumps; lower `n` → more candidate
+    jumps. \| **Example:**
 
     ``` r
     filter_method_ms1 = c(peaksCount = "mean_sd")
     threshold_ms1 = list(peaksCount = 2)
     ```
 
-    This uses two standard deviations above the mean difference as the
-    criterion for detecting a significant jump.
+    This example uses two standard deviations above the mean difference
+    as the criterion for detecting a significant jump.
 
   - **`quantile_prob`**: Quantile-based filtering using R’s internal
     `stats::quantile()` function.
 
     **Method:**
 
-    1.  Sorts the variable values in ascending order
-    2.  Calculates the specific quantiles to define lower and upper
+    1.  Sort the variable values in ascending order
+    2.  Calculate the specific quantiles to define lower and upper
         boundaries for peaksCount, totIonCurrent, or rtime (use
         `stats::quantile()` function)
     3.  Applies these calculated quantiles as lower and upper threshold
         boundaries.
 
-    **Parameter:**
-
-    - `c(lower bound, upper bound)` a numeric vector defining the
-      quantile probabilities passed to `stats::quantile()` (defined in
-      `threshold_ms1` and `threshold_ms2`).
-
-    **Example:**
+    **Parameter:** \|——\|————-\| \| `c(lower bound, upper bound)` \|
+    Probability vector passed to `stats::quantile()`, defining the lower
+    and upper quantile bounds (set via `threshold_ms1` /
+    `threshold_ms2`). \| **Example:**
 
     ``` r
     filter_method_ms1 = c(peaksCount = "quantile_prob")
@@ -215,11 +210,8 @@ mass_spectrum_data_filtered = qc_results$filtered_ms_data
 
     1.  Directly compares variables against a hard-coded range.
 
-    **Parameter:**
-
-    - `c(min value, max value)`, a vector of length 2.
-
-    **Example:**
+    **Parameter:** \|——\|————-\| \| `c(min, max)` \| A length-2 numeric
+    vector specifying the lower and upper bounds. \| **Example:**
 
     ``` r
     filter_method_ms1 = c(rtime = "start_end")
