@@ -156,7 +156,7 @@ mass_spectrum_data_filtered = qc_results$filtered_ms_data
   - **`mean_sd`**: Adaptive threshold detection using the “knee point”
     method
 
-    Method:
+    - Method:  
 
     1.  Sorts the variable values in ascending order
     2.  Calculates consecutive differences between sorted values
@@ -166,13 +166,11 @@ mass_spectrum_data_filtered = qc_results$filtered_ms_data
     4.  Select the position with the maximum significant jump as the
         cutoff threshold.
 
-    **Parameter:**
-
-    - `n`: controls the sensitivity of jump detection. Higher `n`: fewer
-      candidate jumps considered  
-      Lower `n`: more candidate jumps considered
-
-    **Example:**
+    - Parameter:
+      - `n`: controls the sensitivity of jump detection. Higher `n`:
+        fewer candidate jumps considered  
+        Lower `n`: more candidate jumps considered
+    - Example:
 
     ``` r
     filter_method_ms1 = c(peaksCount = "mean_sd")
