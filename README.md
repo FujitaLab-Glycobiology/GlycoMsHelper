@@ -166,9 +166,9 @@ mass_spectrum_data_filtered = qc_results$filtered_ms_data
     4.  Select the position with the maximum significant jump as the
         cutoff threshold.
 
-    **Parameter:** \|——\|——\| \| `n` \| Sensitivity of jump detection.
-    Higher `n` → fewer candidate jumps; lower `n` → more candidate
-    jumps. \| **Example:**
+    **Parameter:** \| \| \| \|——\|——\| \| `n` \| Sensitivity of jump
+    detection. Higher `n` → fewer candidate jumps; lower `n` → more
+    candidate jumps. \| **Example:**
 
     ``` r
     filter_method_ms1 = c(peaksCount = "mean_sd")
