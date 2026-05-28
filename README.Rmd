@@ -136,15 +136,15 @@ mass_spectrum_data_filtered = qc_results$filtered_ms_data
 ```
 
 #### Parameters
-- **`ms_data`**
+- **`ms_data`**  
   The MS data will be used for the quality control. 
 
-- **`filter_method_ms1` and `filter_method_ms2`**
+- **`filter_method_ms1` and `filter_method_ms2`**  
   Named character vectors specifying the QC method used for each MS1 and MS2 spectrum variable, respectively.
   
   - **`mean_sd`**: Adaptive threshold detection using the "knee point" method
     
-    **Method:**
+    Method:  
     1. Sorts the variable values in ascending order
     2. Calculates consecutive differences between sorted values
     3. Identifies significant jumps using the following criterion: 
@@ -195,15 +195,14 @@ mass_spectrum_data_filtered = qc_results$filtered_ms_data
     ```
     This restricts the data to spectra acquired between 8 and 45 minutes.
     
-- **`threshold_ms1` and `threshold_ms2`**: the list vector for the QC method defined in `filter_method_ms1` and `filter_method_ms2`.
+- **`threshold_ms1` and `threshold_ms2`**  
+  The list vector for the QC method defined in `filter_method_ms1` and `filter_method_ms2`.
   - For `mean_sd`, the parameter is `n`.
   - For `quantile_prob`, the parameter is `c(lower_bound, upper_bound)`.
   - For `start_end`, the parameter is `c(min_value, max_value)`.
 
-- **`plot_option`**:
+- **`plot_option`**  
   Set `plot_option = T` to include diagnostic plots in the output list. These plots visualize the distribution of MS1 and MS2 spectrum variables after filtering, which could be used to verify the QC results, filtered variables and left variables are in different color. The upper plot is variables sorted in time, the lower plot is variables sorted in ascending order. 
-
-
 
 
 
@@ -238,7 +237,9 @@ MS2 spectrum denoising
 The `MS2SpectrumDenoising` function performs denoising on every MS2 spectrum for the MS data after QC.
 
 #### Denoising logic
-- `spline_segmentation_regression`, `spline_regression`, `segmentation_regression`, and `quantile_prob`:
+- `spline_segmentation_regression`, `spline_regression`, `segmentation_regression`
+
+- `quantile_prob`:
 Provide dynamic noise threshold estimation for each of the MS2 spectrum.
 
 - `fixed_value`:
@@ -251,7 +252,14 @@ Use the fixed noise threshold for every MS2 spectrum.
 - `quantile_prob`
 - `fixed_value`
 
+#### Output
+```text
+Denoised_result
+|-- denoised_ms_data                  Denoised MS data for next step or could be exported
+|-- denoising_regression_info         Detailed denoised parameters for each MS2 spectrum
+```
 
+#### Codes
 ```{r STEP4, eval = FALSE}
 # MS2 spectrum denoising
 ms2_denoising_info = list(
@@ -289,24 +297,50 @@ mass_spectrum_data_filtered_denoised = denoised_results$denoised_ms_data
 
 #### Parameters
 
-- **`ms_data`**: MS data input for the denoising.
+- **`ms_data`**  
+MS data will be used for the denoising.
 
-- **`ms2_spectrum_transform_method`**: define the non-linear signal transform method for MS2 spectrum. After signal transform, the noise threshold could be determined.
+- **`ms2_spectrum_transform_method`**  
+Define the non-linear signal transform method for MS2 spectrum. After signal transform, the noise threshold could be determined.
 
-  - `log2_transform`: log2(x + 1) transform. 
-  - `asinh_transform`: asinh(x) transform
-  - `non_transform`: the signal is not non-linear transformed, may not suitable for the `spline_segmentation_regression`, `spline_regression`, and `segmentation_regression`
-  - `function(z)`: users defined function, could be any thing. 
-    - Example: `ms2_spectrum_transform_method = function(z) log10(z + 1)`
+  - **`log2_transform`**: log2(x + 1) transform
+  
+  - **`asinh_transform`**: asinh(x) transform
+  
+  - **`non_transform`**: the signal is not non-linear transformed, may not suitable for the `spline_segmentation_regression`, `spline_regression`, and `segmentation_regression`
+  
+  - **`function(z)`**: users defined function, could be any thing. 
+    **Example**
+    
+    ```r
+    ms2_spectrum_transform_method = function(z) log10(z + 1)
+    ```
+    This uses log10(x + 1) as the non-linear transform function for MS2
+
+
+
+
+
+
+
+
+
+
 
 
 - **`ms2_denoising_method`**
 
-  - `spline_segmentation_regression`
-    - Method:
+  - **`spline_segmentation_regression`**: automatically determine to use the spline-based or the segmentation regression-based method for denoising based on the properties of the MS2 spectrum 
+  
+    **Method:**
+    1. Apply a non-linear transform to the MS2 spectrum intensities (defined in `ms2_spectrum_transform_method`).
+    2. remove the duplicated transformed intensity values and sort the transformed spectrum in ascending order.
+    3. check the top 4 transformed intensity values and their corresponding m/z value, the difference between the m/z value will be calculated, and then the cv value of the difference will be calculated. if the cv value is smaller than 0.05 and the m/z difference is smaller then 1.11, bigger than 0.09, spline-based denoising method will be used, or the segmentation regression-based denoising method will be used.
+    4. Perform either the segmentation regression or spline regression to fit the transformed spectrum
+    5. for the segmentation regression-based method, the noise threshold is determined at the breakpoint of the linear regression and the non-linear regression. For the spline regression-based method, the noise threshold is determined at the position with the minimum first derivative of the fitted curve.
     
-    - Parameters:
-      - `spar_start`
+    **Parameters:**
+      - `spar_start`: the starting value of the spar parameter for the spline regression, default is -1.5
       - `spar_end`
       - `spar_step`
       - `RMSE_weight`
@@ -317,7 +351,7 @@ mass_spectrum_data_filtered_denoised = denoised_results$denoised_ms_data
       - `top_n_to_remove`
       - `segmentated_non_linear_transform_fun`
       
-    - Example:
+    **Example:**
   
   
   
