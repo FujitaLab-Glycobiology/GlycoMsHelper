@@ -152,9 +152,11 @@ mass_spectrum_data_filtered = qc_results$filtered_ms_data
       4. Select the position with the maximum significant jump as the cutoff threshold. 
     
     **Parameter:**
+    
       |  |  |
       |-----------|-------------|
       | `c(min, max)` | A length-2 numeric vector specifying the lower and upper bounds. | 
+      
     **Example:**
     
       ```r
@@ -171,9 +173,11 @@ mass_spectrum_data_filtered = qc_results$filtered_ms_data
       3. Applies these calculated quantiles as lower and upper threshold boundaries. 
     
     **Parameter:** 
+    
       |  |  |
       |------|------------|
-      | `c(lower bound, upper bound)` | Probability vector passed to `stats::quantile()`, defining the lower and upper quantile bounds (set via `threshold_ms1` / `threshold_ms2`). |
+      | `c(lower bound, upper bound)` | Probability vector passed to `stats::quantile()`, defining the lower and upper quantile bounds (set via `threshold_ms1` / `threshold_ms2`). | 
+      
     **Example:** 
       ```r
       filter_method_ms1 = c(peaksCount = "quantile_prob")
@@ -186,10 +190,12 @@ mass_spectrum_data_filtered = qc_results$filtered_ms_data
     **Method**  
       1. Directly compares variables against a hard-coded range.
     
-    **Parameter:**
+    **Parameter:** 
+    
       |  |  |
       |------|------------|
       | `c(min, max)` | A length-2 numeric vector specifying the lower and upper bounds. | 
+      
     **Example:** 
     
       ```r
@@ -331,6 +337,7 @@ Define the non-linear signal transform method for MS2 spectrum. After signal tra
       5. determine the noise threshold, for the segmentation regression-based method, the noise threshold is determined at the breakpoint of the linear regression and the non-linear regression. For the spline regression-based method, the noise threshold is determined at the position with the minimum first derivative of the fitted curve.
 
     **Parameters:**
+    
       |      |            |
       |------|------------|
       | `spar_start`  | The starting value of the spar parameter for the spline regression, default is -1.5 |
@@ -343,6 +350,7 @@ Define the non-linear signal transform method for MS2 spectrum. After signal tra
       | `use_cv`      | Whether to use cv in the `stats::smooth.spline()` fucntion for the spline fitting |
       | `top_n_to_remove` | for the spline-based denoising, define the number of top transformed intensity values to remove, cause for the top values, the smallest first derivative might appears at the top values |
       | `segmentated_non_linear_transform_fun` | For the segmentation regression-based method, because the linear and non-linear regresion are performed using the `stats::lm()` fucntion, so users need to define the non-linear transform function for the non-linear regression part |
+      
     **Example:**
     ```r
     ms2_denoising_method = 'spline_segmentation_regression'
@@ -364,6 +372,7 @@ Define the non-linear signal transform method for MS2 spectrum. After signal tra
       4. determine the noise threshold, For the spline regression-based method, the noise threshold is determined at the position with the minimum first derivative of the fitted curve.
     
     **Parameters:**
+    
       |      |            |
       |------|------------|
       | `spar_start`  | The starting value of the spar parameter for the spline regression, default is -1.5 |
@@ -375,6 +384,7 @@ Define the non-linear signal transform method for MS2 spectrum. After signal tra
       | `D1_weight`   | Weight of D1 value used to determine the best `spar` parameter for the spline fitting |
       | `use_cv`      | Whether to use cv in the `stats::smooth.spline()` fucntion for the spline fitting |
       | `top_n_to_remove` | for the spline-based denoising, define the number of top transformed intensity values to remove, cause for the top values, the smallest first derivative might appears at the top values |
+      
     **Example:**
       ```r
       ms2_denoising_method = 'spline_regression'
@@ -395,9 +405,11 @@ Define the non-linear signal transform method for MS2 spectrum. After signal tra
       4. determine the noise threshold, the noise threshold is determined at the breakpoint of the linear regression and the non-linear regression. 
     
     **Parameters:**
+    
       |      |            |
       |------|------------|
       | `segmentated_non_linear_transform_fun` | For the segmentation regression-based method, because the linear and non-linear regresion are performed using the `stats::lm()` fucntion, so users need to define the non-linear transform function for the non-linear regression part |
+      
     **Example:**
       ```r
       ms2_denoising_method = 'segmentation_regression'
@@ -415,6 +427,7 @@ Define the non-linear signal transform method for MS2 spectrum. After signal tra
         3. determine the noise threshold, the noise threshold is determined based on the quantile of the transformed intensity values, the quantile is calculated using the `stats::quantile()` function, and the probability vector for calculating the quantiles is defined in `threshold_ms2`.
     
     **Parameters:**
+    
       |      |            |
       |------|------------|
       | quantile_prob |     |

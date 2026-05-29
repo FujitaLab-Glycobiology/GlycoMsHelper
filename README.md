@@ -166,8 +166,12 @@ mass_spectrum_data_filtered = qc_results$filtered_ms_data
     4.  Select the position with the maximum significant jump as the
         cutoff threshold.
 
-    **Parameter:** \| \| \| \|———–\|————-\| \| `c(min, max)` \| A
-    length-2 numeric vector specifying the lower and upper bounds. \|
+    **Parameter:**
+
+    |  |  |
+    |----|----|
+    | `c(min, max)` | A length-2 numeric vector specifying the lower and upper bounds. |
+
     **Example:**
 
     ``` r
@@ -190,10 +194,13 @@ mass_spectrum_data_filtered = qc_results$filtered_ms_data
     3.  Applies these calculated quantiles as lower and upper threshold
         boundaries.
 
-    **Parameter:** \| \| \| \|——\|————\| \|
-    `c(lower bound, upper bound)` \| Probability vector passed to
-    `stats::quantile()`, defining the lower and upper quantile bounds
-    (set via `threshold_ms1` / `threshold_ms2`). \| **Example:**
+    **Parameter:**
+
+    |  |  |
+    |----|----|
+    | `c(lower bound, upper bound)` | Probability vector passed to `stats::quantile()`, defining the lower and upper quantile bounds (set via `threshold_ms1` / `threshold_ms2`). |
+
+    **Example:**
     `r   filter_method_ms1 = c(peaksCount = "quantile_prob")   threshold_ms1 = list(peaksCount = c(0.1, 1))`
     This uses the 10th percentile as the minimum threshold for
     `peaksCount`.
@@ -205,8 +212,12 @@ mass_spectrum_data_filtered = qc_results$filtered_ms_data
 
     1.  Directly compares variables against a hard-coded range.
 
-    **Parameter:** \| \| \| \|——\|————\| \| `c(min, max)` \| A length-2
-    numeric vector specifying the lower and upper bounds. \|
+    **Parameter:**
+
+    |  |  |
+    |----|----|
+    | `c(min, max)` | A length-2 numeric vector specifying the lower and upper bounds. |
+
     **Example:**
 
     ``` r
@@ -370,28 +381,22 @@ mass_spectrum_data_filtered_denoised = denoised_results$denoised_ms_data
         threshold is determined at the position with the minimum first
         derivative of the fitted curve.
 
-    **Parameters:** \| \| \| \|——\|————\| \| `spar_start` \| The
-    starting value of the spar parameter for the spline regression,
-    default is -1.5 \| \| `spar_end` \| The starting value of the spar
-    parameter for the spline regression, default is 1.5 \| \|
-    `spar_step` \| The step value of the spar parameter for the spline
-    regression, default is 0.02 \| \| `RMSE_weight` \| Weight of RMSE
-    value used to determine the best `spar` parameter for the spline
-    fitting \| \| `CV_weight` \| Weight of CV value used to determine
-    the best `spar` parameter for the spline fitting \| \| `D2_weight`
-    \| Weight of D2 value used to determine the best `spar` parameter
-    for the spline fitting \| \| `D1_weight` \| Weight of D1 value used
-    to determine the best `spar` parameter for the spline fitting \| \|
-    `use_cv` \| Whether to use cv in the `stats::smooth.spline()`
-    fucntion for the spline fitting \| \| `top_n_to_remove` \| for the
-    spline-based denoising, define the number of top transformed
-    intensity values to remove, cause for the top values, the smallest
-    first derivative might appears at the top values \| \|
-    `segmentated_non_linear_transform_fun` \| For the segmentation
-    regression-based method, because the linear and non-linear regresion
-    are performed using the `stats::lm()` fucntion, so users need to
-    define the non-linear transform function for the non-linear
-    regression part \| **Example:**
+    **Parameters:**
+
+    |  |  |
+    |----|----|
+    | `spar_start` | The starting value of the spar parameter for the spline regression, default is -1.5 |
+    | `spar_end` | The starting value of the spar parameter for the spline regression, default is 1.5 |
+    | `spar_step` | The step value of the spar parameter for the spline regression, default is 0.02 |
+    | `RMSE_weight` | Weight of RMSE value used to determine the best `spar` parameter for the spline fitting |
+    | `CV_weight` | Weight of CV value used to determine the best `spar` parameter for the spline fitting |
+    | `D2_weight` | Weight of D2 value used to determine the best `spar` parameter for the spline fitting |
+    | `D1_weight` | Weight of D1 value used to determine the best `spar` parameter for the spline fitting |
+    | `use_cv` | Whether to use cv in the `stats::smooth.spline()` fucntion for the spline fitting |
+    | `top_n_to_remove` | for the spline-based denoising, define the number of top transformed intensity values to remove, cause for the top values, the smallest first derivative might appears at the top values |
+    | `segmentated_non_linear_transform_fun` | For the segmentation regression-based method, because the linear and non-linear regresion are performed using the `stats::lm()` fucntion, so users need to define the non-linear transform function for the non-linear regression part |
+
+    **Example:**
 
     ``` r
     ms2_denoising_method = 'spline_segmentation_regression'
@@ -422,23 +427,21 @@ mass_spectrum_data_filtered_denoised = denoised_results$denoised_ms_data
         method, the noise threshold is determined at the position with
         the minimum first derivative of the fitted curve.
 
-    **Parameters:** \| \| \| \|——\|————\| \| `spar_start` \| The
-    starting value of the spar parameter for the spline regression,
-    default is -1.5 \| \| `spar_end` \| The starting value of the spar
-    parameter for the spline regression, default is 1.5 \| \|
-    `spar_step` \| The step value of the spar parameter for the spline
-    regression, default is 0.02 \| \| `RMSE_weight` \| Weight of RMSE
-    value used to determine the best `spar` parameter for the spline
-    fitting \| \| `CV_weight` \| Weight of CV value used to determine
-    the best `spar` parameter for the spline fitting \| \| `D2_weight`
-    \| Weight of D2 value used to determine the best `spar` parameter
-    for the spline fitting \| \| `D1_weight` \| Weight of D1 value used
-    to determine the best `spar` parameter for the spline fitting \| \|
-    `use_cv` \| Whether to use cv in the `stats::smooth.spline()`
-    fucntion for the spline fitting \| \| `top_n_to_remove` \| for the
-    spline-based denoising, define the number of top transformed
-    intensity values to remove, cause for the top values, the smallest
-    first derivative might appears at the top values \| **Example:**
+    **Parameters:**
+
+    |  |  |
+    |----|----|
+    | `spar_start` | The starting value of the spar parameter for the spline regression, default is -1.5 |
+    | `spar_end` | The starting value of the spar parameter for the spline regression, default is 1.5 |
+    | `spar_step` | The step value of the spar parameter for the spline regression, default is 0.02 |
+    | `RMSE_weight` | Weight of RMSE value used to determine the best `spar` parameter for the spline fitting |
+    | `CV_weight` | Weight of CV value used to determine the best `spar` parameter for the spline fitting |
+    | `D2_weight` | Weight of D2 value used to determine the best `spar` parameter for the spline fitting |
+    | `D1_weight` | Weight of D1 value used to determine the best `spar` parameter for the spline fitting |
+    | `use_cv` | Whether to use cv in the `stats::smooth.spline()` fucntion for the spline fitting |
+    | `top_n_to_remove` | for the spline-based denoising, define the number of top transformed intensity values to remove, cause for the top values, the smallest first derivative might appears at the top values |
+
+    **Example:**
     `r   ms2_denoising_method = 'spline_regression'   ms2_denoising_info = list(     spline_regression = list(       spar_start = -1.5, spar_end = 1.5, spar_step = 0.02,        RMSE_weight = 0.3, CV_weight = 0.3, D2_weight = 0.3, D1_weight = 0.1,        use_cv = T, top_n_to_remove = 5       )   )`
 
   - **`segmentation_regression`**: Use the segmentation regression-based
@@ -458,12 +461,13 @@ mass_spectrum_data_filtered_denoised = denoised_results$denoised_ms_data
         at the breakpoint of the linear regression and the non-linear
         regression.
 
-    **Parameters:** \| \| \| \|——\|————\| \|
-    `segmentated_non_linear_transform_fun` \| For the segmentation
-    regression-based method, because the linear and non-linear regresion
-    are performed using the `stats::lm()` fucntion, so users need to
-    define the non-linear transform function for the non-linear
-    regression part \| **Example:**
+    **Parameters:**
+
+    |  |  |
+    |----|----|
+    | `segmentated_non_linear_transform_fun` | For the segmentation regression-based method, because the linear and non-linear regresion are performed using the `stats::lm()` fucntion, so users need to define the non-linear transform function for the non-linear regression part |
+
+    **Example:**
     `r   ms2_denoising_method = 'segmentation_regression'   ms2_denoising_info = list(     segmentation_regression = list(       segmentated_non_linear_transform_fun = function(z) z^2+z       )   )`
 
   - **`quantile_prob`**: denoising based on the quantile of the signal
@@ -477,7 +481,11 @@ mass_spectrum_data_filtered_denoised = denoised_results$denoised_ms_data
     function, and the probability vector for calculating the quantiles
     is defined in `threshold_ms2`.
 
-    **Parameters:** \| \| \| \|——\|————\| \| quantile_prob \| \|
+    **Parameters:**
+
+    |               |     |
+    |---------------|-----|
+    | quantile_prob |     |
 
     **Example:**
 
