@@ -442,7 +442,17 @@ mass_spectrum_data_filtered_denoised = denoised_results$denoised_ms_data
     | `top_n_to_remove` | for the spline-based denoising, define the number of top transformed intensity values to remove, cause for the top values, the smallest first derivative might appears at the top values |
 
     **Example:**
-    `r   ms2_denoising_method = 'spline_regression'   ms2_denoising_info = list(     spline_regression = list(       spar_start = -1.5, spar_end = 1.5, spar_step = 0.02,        RMSE_weight = 0.3, CV_weight = 0.3, D2_weight = 0.3, D1_weight = 0.1,        use_cv = T, top_n_to_remove = 5       )   )`
+
+    ``` r
+    ms2_denoising_method = 'spline_regression'
+    ms2_denoising_info = list(
+      spline_regression = list(
+        spar_start = -1.5, spar_end = 1.5, spar_step = 0.02, 
+        RMSE_weight = 0.3, CV_weight = 0.3, D2_weight = 0.3, D1_weight = 0.1, 
+        use_cv = T, top_n_to_remove = 5
+        )
+    )
+    ```
 
   - **`segmentation_regression`**: Use the segmentation regression-based
     method for denoising **Method:**
@@ -468,7 +478,15 @@ mass_spectrum_data_filtered_denoised = denoised_results$denoised_ms_data
     | `segmentated_non_linear_transform_fun` | For the segmentation regression-based method, because the linear and non-linear regresion are performed using the `stats::lm()` fucntion, so users need to define the non-linear transform function for the non-linear regression part |
 
     **Example:**
-    `r   ms2_denoising_method = 'segmentation_regression'   ms2_denoising_info = list(     segmentation_regression = list(       segmentated_non_linear_transform_fun = function(z) z^2+z       )   )`
+
+    ``` r
+    ms2_denoising_method = 'segmentation_regression'
+    ms2_denoising_info = list(
+      segmentation_regression = list(
+        segmentated_non_linear_transform_fun = function(z) z^2+z
+        )
+    )
+    ```
 
   - **`quantile_prob`**: denoising based on the quantile of the signal
     intentity **Method:** 1. Apply a non-linear transform to the MS2
