@@ -319,10 +319,13 @@ Define the non-linear signal transform method for MS2 spectrum. After signal tra
   - **`non_transform`**: the signal is not non-linear transformed, may not suitable for the `spline_segmentation_regression`, `spline_regression`, and `segmentation_regression`
   
   - **`function(z)`**: users defined function, could be any thing. 
+  
     **Example**
+    
       ```r
       ms2_spectrum_transform_method = function(z) log10(z + 1)
       ```
+      
       This uses log10(x + 1) as the non-linear transform function for MS2
 
 - **`ms2_denoising_method`**

@@ -339,9 +339,14 @@ mass_spectrum_data_filtered_denoised = denoised_results$denoised_ms_data
     `spline_regression`, and `segmentation_regression`
 
   - **`function(z)`**: users defined function, could be any thing.
+
     **Example**
-    `r   ms2_spectrum_transform_method = function(z) log10(z + 1)` This
-    uses log10(x + 1) as the non-linear transform function for MS2
+
+    ``` r
+    ms2_spectrum_transform_method = function(z) log10(z + 1)
+    ```
+
+    This uses log10(x + 1) as the non-linear transform function for MS2
 
 - **`ms2_denoising_method`**
 

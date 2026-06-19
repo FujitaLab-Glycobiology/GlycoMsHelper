@@ -854,6 +854,11 @@ ConstructGlycanLibrary = function(glycan_type = glycan_type_default,
 
 
   keep <- total_charges >= min_charge_state & total_charges <= max_charge_state
+
+  if ("H" %in% colnames(adduct_combos_all_grids)) {
+    keep <- keep & adduct_combos_all_grids$H >= 1
+  }
+
   adduct_combos_all_grids <- adduct_combos_all_grids[keep, , drop = FALSE]
   adduct_combos_all_grids$total_charge <- total_charges[keep]
   rownames(adduct_combos_all_grids) <- NULL
@@ -2570,7 +2575,47 @@ ValidateGlycanCompositionByIsotopePattern = function(spectrum_matching_info,
 
   validate_spectrum_matching_info = dplyr::bind_rows(res_list)
 
-  return(validate_spectrum_matching_info)
+
+
+
+
+
+
+
+  # hek293_gsl_final_spectrum_matching_result_summ = all_results$`240905_5`$final_spectrum_matching_result %>%
+  #   dplyr::mutate(adduct_type = paste0(ifelse(H  > 0, paste0("H", H), ""),
+  #                                      ifelse(K  > 0, paste0("K", K), ""))) %>%
+  #   dplyr::select(Hex, HexNAc, dHex, Neu5Ac, Neu5Gc, adduct_type, total_charge,
+  #                 glycan_string, ms2_spectrum_id, ms2_retention_time,
+  #                 ion_formula, theoretical_monoisotopic_mz,
+  #                 ms1_spectrum_id, ms2_precursor_mz, ms2_total_ion_current) %>%
+  #   group_by(glycan_string, adduct_type) %>%
+  #   summarise(
+  #     across(c(Hex, HexNAc, dHex, Neu5Ac, Neu5Gc, total_charge,
+  #              ion_formula, theoretical_monoisotopic_mz), first),
+  #     ms2_spectrum_ids = paste(ms2_spectrum_id, collapse = ", "),
+  #     ms2_precursor_mzs = paste(ms2_precursor_mz, collapse = ", "),
+  #     ms2_retention_times = paste(ms2_retention_time, collapse = ", "),
+  #     ms1_spectrum_ids = paste(unique(ms1_spectrum_id), collapse = ", "),
+  #     ms2_tic_sum = sum(ms2_total_ion_current),
+  #     n_spectra = n(),
+  #     .groups = "drop"
+  #   )
+  #
+  #
+
+
+
+
+
+
+
+
+
+  return(
+    list(validate_spectrum_matching_info
+         )
+  )
 
 
 }
