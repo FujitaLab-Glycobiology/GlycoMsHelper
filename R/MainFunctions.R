@@ -852,6 +852,7 @@ ConstructGlycanLibrary = function(glycan_type = glycan_type_default,
   #
   #
 
+  keep <- total_charges >= min_charge_state & total_charges <= max_charge_state
 
   adduct_cols <- colnames(adduct_combos_all_grids)
   non_H_cols <- setdiff(adduct_cols, "H")
