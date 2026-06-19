@@ -858,7 +858,9 @@ ConstructGlycanLibrary = function(glycan_type = glycan_type_default,
   non_H_cols <- setdiff(adduct_cols, "H")
 
   if ("H" %in% adduct_cols && length(non_H_cols) > 0) {
-    non_H_adduct_num <- rowSums(adduct_combos_all_grids[, non_H_cols, drop = FALSE])
+    non_H_adduct_num <- rowSums(
+      adduct_combos_all_grids[, non_H_cols, drop = FALSE] > 0
+      )
 
     keep <- keep & !(
       adduct_combos_all_grids[["H"]] == 0 &
