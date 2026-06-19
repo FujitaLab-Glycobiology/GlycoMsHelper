@@ -853,11 +853,20 @@ ConstructGlycanLibrary = function(glycan_type = glycan_type_default,
   #
 
 
-  keep <- total_charges >= min_charge_state & total_charges <= max_charge_state
+  adduct_cols <- colnames(adduct_combos_all_grids)
+  non_H_cols <- setdiff(adduct_cols, "H")
 
-  if ("H" %in% colnames(adduct_combos_all_grids)) {
-    keep <- keep & adduct_combos_all_grids$H >= 1
+  if ("H" %in% adduct_cols && length(non_H_cols) > 0) {
+    non_H_adduct_num <- rowSums(adduct_combos_all_grids[, non_H_cols, drop = FALSE])
+
+    keep <- keep & !(
+      adduct_combos_all_grids[["H"]] == 0 &
+        non_H_adduct_num > 1
+    )
   }
+
+
+
 
   adduct_combos_all_grids <- adduct_combos_all_grids[keep, , drop = FALSE]
   adduct_combos_all_grids$total_charge <- total_charges[keep]
