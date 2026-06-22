@@ -2624,9 +2624,8 @@ ValidateGlycanCompositionByIsotopePattern = function(spectrum_matching_info,
 
 
 
-  return(
-    list(validate_spectrum_matching_info
-         )
+  return(validate_spectrum_matching_info
+    #list(validate_spectrum_matching_info)
   )
 
 
