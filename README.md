@@ -93,7 +93,7 @@ QC_result
 |-- pic_ms_varibles_filtered          Diagnostic plots showing the distributions of MS1 and MS2 variables after filtering.
 |   |                                 Filtered and retained spectra are shown in different colors.
 |   |                                 The upper plot shows variables ordered by retention time. 
-|   |                                 the lower plot shows variables sorted in ascending order.
+|   |                                 The lower plot shows variables sorted in ascending order.
 |   |-- MS1_peaksCount
 |   |-- MS1_totIonCurrent
 |   |-- MS1_rtime
@@ -103,7 +103,7 @@ QC_result
 |-- pic_ms_varibles_unfiltered        Diagnostic plots showing the distributions of MS1 and MS2 variables before filtering.
 |   |                                 These plots can be used to determine appropriate QC methods and thresholds.
 |   |                                 The upper plot shows variables ordered by retention time.
-|   |                                 the lower plot shows variables sorted in ascending order.
+|   |                                 The lower plot shows variables sorted in ascending order.
 |   |-- MS1_peaksCount
 |   |-- MS1_totIonCurrent
 |   |-- MS1_rtime
@@ -168,9 +168,9 @@ mass_spectrum_data_filtered = qc_results$filtered_ms_data
 
     **Parameter:**
 
-    |  |  |
-    |----|----|
-    | `c(min, max)` | A length-2 numeric vector specifying the lower and upper bounds. |
+    |           |                                      |
+    |-----------|--------------------------------------|
+    | `numeric` | A numeric vector specifying the `n`. |
 
     **Example:**
 
@@ -520,6 +520,33 @@ mass_spectrum_data_filtered_denoised = denoised_results$denoised_ms_data
 
 - **`ms2_denoising_detail`**
 
+### STEP5:
+
+MS2 spectrum filtering based on logical expression–defined diagnostic
+ions
+
+The `FindSpectrumByDiagnosticFragments` function filters MS2 spectra
+based on the presence and/or absence of user-defined diagnostic ions and
+extracts the MS1 spectra corresponding to the filtered MS2 spectra.
+
+#### Filtering logic
+
+Extracts MS2 spectra that satisfy the user-defined logical expression
+within the specified ppm tolerance, and then retrieves the preceding MS1
+spectrum with the smallest retention time difference relative to each
+filtered MS2 spectrum.
+
+#### Output
+
+``` text
+diagnostic_results
+|-- selected_ms_data      Extracted MS2 spectra (without denoising) and their corresponding MS1 spectra could be exported in `.mzML` format for further analysis.
+|-- spectrum_info         Detailed MS2 spectrum information for each filtered MS2 spectrum, including MS2_spectrum_id, 
+|                         ms2_precursor_charge, ms2_precursor_mz, ms2_retention_time, and diagnostic ion presence/absence.
+```
+
+#### Codes
+
 ``` r
 # Find the spectrum likely to be glycan based on diagnostic ions 
 diagnostic_frags = c(
@@ -553,7 +580,34 @@ diagnostic_results = GlycoMsHelper::FindSpectrumByDiagnosticFragments(
 likely_glycan_spectrum_info = diagnostic_results$spectrum_info
 ```
 
-### STEP4:
+#### Parameters
+
+- **`ms_data`**  
+  The MS data to be used for diagnostic filtering (typically the
+  filtered and denoised data).
+
+- **`ms_data_raw`**  
+  The MS data before denoising.
+
+- **`diagnostic_frags_list`** Named numeric vector defined all the
+  diagnostic ions and their corresponding m/z values.
+
+  - names: diagnostic ion identifiers (e.g.: `"HexNAc"`).
+  - values: diagnostic ion m/z values (`numeric`).
+
+- **`diagnostic_frags_exp`** A logical expression string constructed
+  from the identifiers defined in `diagnostic_frags_list`. The string
+  must be a valid R logical expression evaluating structural constraints
+  using standard R operators:
+
+  - `&`: AND
+  - `|`: OR
+  - `!`: NOT
+
+- **`ppm_val`** The ppm tolerance for matching the diagnostic ions
+  signal in the MS2 spectra.
+
+### STEP6:
 
 Construct the glycan lib
 
@@ -610,7 +664,25 @@ N_glycan_library_iso_info = GetMonoisoAndIsotopologueRatio(glycan_lib = N_glycan
                                           threshold_iso_probalility = 0.01) 
 ```
 
-### STEP5:
+#### Supported glycan types
+
+- **`N_glycan`**
+- **`O_glycan`**
+- **`GSL`**
+- **`GPI`**
+
+#### Output
+
+``` text
+N_glycan_library
+|-- monosaccharides_combination
+|-- adduct_combination
+|-- monosaccharides_adduct_num
+|-- monosaccharides_adduct_weight
+|-- glycan_monosaccharides_library
+```
+
+### STE:
 
 Match the likely glycan spectrum to glycan lib
 
@@ -625,7 +697,7 @@ likely_glycan_spectrum_matching_result = GlycoMsHelper::FindPossibleGlycanCompos
 # write.csv(likely_glycan_spectrum_matching_result, file = 'your_csv_file_path_and_name.csv')
 ```
 
-### STEP6:
+### STEP6\_\_\_:
 
 Find the candidate glycan composition based on isotopics distribution
 
@@ -644,7 +716,7 @@ final_glycan_spectrum_matching_result = GlycoMsHelper::ValidateGlycanComposition
 # write.csv(final_glycan_spectrum_matching_result, file = 'your_csv_file_path_and_name.csv')
 ```
 
-### STEP7:
+### STEP\_\_7:
 
 ``` r
 ms2_spectrum_similarity_info = GetMS2SpectrumSimilarityScore(ms_data = mass_spectrum_data_filtered, 
