@@ -534,8 +534,53 @@ The ppm tolerance for matching the diagnostic ions signal in the MS2 spectra.
 
 
 ### STEP6: 
-Construct the glycan lib
+Construct the glycan library based on user-defined glycan type (different glycan types have different rules), monosaccharides, and adducts.
 
+
+#### Built-in varibles 
+
+##### Glycan types
+- **`N_glycan`**
+- **`O_glycan`**
+- **`GSL`**
+- **`GPI`**
+- **`users defined (Custom rules defined by the user)`**
+
+##### Adducts
+- **`H`** (proton)
+- **`Na`** (sodium)
+- **`K`** (potassium)
+- **`Li`** (lithium)
+- **`Mg`** (magnesium)
+
+##### Derivatizations
+- **`ProA`**
+- **`AB`**
+- **`PA`**
+
+##### Monosaccharides
+- **`Hex`**
+- **`HexNAc`**
+- **`dHex`**
+- **`Neu5Ac`**
+- **`HexA`**
+- **`Neu5Gc`**
+- **`Pentose`**
+- **`KDN`**
+
+
+#### Output
+
+```text
+N_glycan_library
+|-- monosaccharides_combination
+|-- adduct_combination
+|-- monosaccharides_adduct_num
+|-- monosaccharides_adduct_weight
+|-- glycan_monosaccharides_library
+```
+
+#### Codes
 ```{r STEP6, eval = FALSE}
 molecular_formula_all = c(
   # monosaccharides
@@ -589,22 +634,182 @@ N_glycan_library_iso_info = GetMonoisoAndIsotopologueRatio(glycan_lib = N_glycan
                                           threshold_iso_probalility = 0.01) 
 ```
 
-#### Supported glycan types
-- **`N_glycan`**
-- **`O_glycan`**
-- **`GSL`**
-- **`GPI`**
+#### Parameters
+- **`glycan_type`** (`character`) 
+The type of glycan library to generate. Options include: `N_glycan`, `O_glycan`, `GSL`, `GPI`, or a custom user-defined string.
 
-#### Output
+- **`min_charge_state`** (`numeric`)
+The minimum charge state of the glycans in the library, default: 1
 
-```text
-N_glycan_library
-|-- monosaccharides_combination
-|-- adduct_combination
-|-- monosaccharides_adduct_num
-|-- monosaccharides_adduct_weight
-|-- glycan_monosaccharides_library
-```
+- **`max_charge_state`** (`numeric`)
+The maximum charge state of the glycans in the library, default: 3
+
+- **`monosaccharides_additional_customized_list`** (`named numeric vector`)
+This option is used when the user wants to include monosaccharides that are NOT one of Hex, HexNAc, dHex, Neu5Ac, HexA, Neu5Gc, Pentose, and KDN.  
+Warning: the name of the customized monosaccharides should be different fromom Hex, HexNAc, dHex, Neu5Ac, HexA, Neu5Gc, Pentose, KDN, if the customized monosaccharides name are same as Hex, HexNAc, dHex, Neu5Ac, HexA, Neu5Gc, Pentose, KDN, the scripts will check to make sure that the molecular weight difference is smaller than 0.01, if not smaller than 0.01, warning will appear. 
+
+  **Example:**
+  ```r
+  monosaccharides_additional_customized_list = c(Hex_de-H2o = 144.0528)
+  min_num_monosaccharides_additional_customized_list = c(Hex_de-H2o = 0)
+  max_num_monosaccharides_additional_customized_list = c(Hex_de-H2o = 3)
+  ```
+
+- **`min_num_monosaccharides_additional_customized_list`** and **`max_num_monosaccharides_additional_customized_list`** (`named numeric vector`)
+Define the minimum and maximum number for the customized monosaccharides in the library, the name of the vector should be same as `monosaccharides_additional_customized_list`, and the value should be numeric. 
+  **Example:**
+  ```r
+  monosaccharides_additional_customized_list = c(Hex_de-H2o = 144.0528)
+  min_num_monosaccharides_additional_customized_list = c(Hex_de-H2o = 0)
+  max_num_monosaccharides_additional_customized_list = c(Hex_de-H2o = 3)
+  ```
+
+- **`adduct_type`** (`character`)
+Built-in adducts: H, Na, K, Li, Mg.  
+For non-built-in adducts, leave this empty and use the customized arguments below (`adduct_monoisotopic_customized_list` and `adduct_monoisotopic_customized_charge_state_list`)
+
+  **Example:**
+  ```r
+  adduct_type = c('H', 'Na', 'K')
+  ```
+
+- **`adduct_monoisotopic_customized_list`** (`named numeric vector`)
+Defines non-built-in adduct names and their corresponding monoisotopic weights. Names must different from  built-in adducts.  
+This option could be used with `adduct_type` together 
+
+  **Example:**
+  ```r
+  # customized only
+  adduct_monoisotopic_customized_list = c(NH4 = 18, Ca = 40)
+  adduct_monoisotopic_customized_charge_state_list = c(NH4 = 1, Ca = 2)
+  
+  # built-in and customized together
+  adduct_type = c('H', 'Na', 'K')
+  adduct_monoisotopic_customized_list = c(NH4 = 18, Ca = 40)
+  adduct_monoisotopic_customized_charge_state_list = c(NH4 = 1, Ca = 2)
+  ```
+
+
+- **`adduct_monoisotopic_customized_charge_state_list`** (`named numeric vector`)
+Define the customized adducts charge state. 
+The name of the vector should be same as `adduct_monoisotopic_customized_list`, and the value should be numeric
+
+  **Example:**
+  ```r
+  adduct_monoisotopic_customized_list = c(NH4 = 18, Ca = 40)
+  adduct_monoisotopic_customized_charge_state_list = c(NH4 = 1, Ca = 2)
+  ```
+
+
+- **`derivatization_type`** and **`derivatization_monoisotopic_weight_customized`**
+'derivatization_type' could be ProA, AB, PA or customized derivatization type.  
+If setting it to "customized", you must provide the companion `derivatization_monoisotopic_weight_customized` value.
+
+  **Example:**
+  ```r
+  # built-in derivatization type
+  derivatization_type = 'ProA'
+  
+
+  # customized derivatization type
+  derivatization_type = 'customized'
+  derivatization_monoisotopic_weight_customized = 100
+  ```
+
+- **`min_Hex_num`**
+`numeric`
+Defalut: 0
+
+- **`max_Hex_num`**
+`numeric`
+Defalut: 12
+
+- **`min_HexNAc_num`**
+`numeric`
+Defalut: 2
+
+- **`max_HexNAc_num`**
+`numeric`
+Defalut: 10
+
+- **`min_dHex_num`**
+`numeric`
+Defalut: 0
+
+- **`max_dHex_num`**
+`numeric`
+Defalut: 4
+
+- **`min_Neu5Ac_num`**
+`numeric`
+Defalut: 0
+
+- **`max_Neu5Ac_num`**
+`numeric`
+Defalut: 4
+
+- **`min_HexA_num`**
+`numeric`
+Defalut: 0
+
+- **`max_HexA_num`**
+`numeric`
+Defalut: 2
+
+- **`min_Neu5Gc_num`**
+`numeric`
+Defalut: 0
+
+- **`max_Neu5Gc_num`**
+`numeric`
+Defalut: 4
+
+- **`min_Pentose_num`**
+`numeric`
+Defalut: 0
+
+- **`max_Pentose_num`**
+`numeric`
+Defalut: 0
+
+- **`min_KDN_num`**
+`numeric`
+Defalut: 0
+
+- **`max_KDN_num`**
+`numeric`
+Defalut: 0
+
+- **`min_total_monosaccharides_num`**
+`numeric`
+Defalut: 2
+
+- **`max_total_monosaccharides_num`**
+`numeric`
+Defalut: 22
+                           
+                             
+                             
+                             
+                             
+                             
+                             
+                             
+                             
+                             
+                             
+                             
+                             
+                             
+                             
+                             
+                             
+                             
+                             
+                             
+
+
+
 
 
 

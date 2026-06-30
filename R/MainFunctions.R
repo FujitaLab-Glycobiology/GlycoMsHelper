@@ -1715,7 +1715,7 @@ MS2SpectrumDenoising = function(ms_data,
         thres_val = denoising_info$threshold_value
         new_row_spectrum_info = denoising_info$row_regression_info
 
-    } else if (ms2_denoising_method == 'segmentation_regression ') {
+    } else if (ms2_denoising_method == 'segmentation_regression') {
 
       denoising_info = GetSegmentationNoise(denoising_detail = ms2_denoising_detail,
                                                   denoising_method = ms2_denoising_method,
@@ -2646,7 +2646,7 @@ ValidateGlycanCompositionByIsotopePattern = function(spectrum_matching_info,
 
 
 # for adduct_type, must define all the adduct appear in the matching result, even it is 0
-adduct_type_default = c(H = 2, Na = 0, K = 0)    # c(H = 1, K = 1)
+adduct_type_similarity_default = c(H = 2, Na = 0, K = 0)    # c(H = 1, K = 1)
 
 # spectrum_matching_result must contains one column named as ms2_spectrum_id
 
@@ -2728,7 +2728,7 @@ adduct_type_default = c(H = 2, Na = 0, K = 0)    # c(H = 1, K = 1)
 GetMS2SpectrumSimilarityScore = function(ms_data,
                                          spectrum_matching_result,
                                          glycan_composition_str,
-                                         adduct_type = adduct_type_default,
+                                         adduct_type = adduct_type_similarity_default,
                                          bin_width,
                                          ms2_range_start,
                                          ms2_range_end) {
