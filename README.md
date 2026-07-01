@@ -854,9 +854,35 @@ N_glycan_library_iso_info = GetMonoisoAndIsotopologueRatio(glycan_lib = N_glycan
 
 - **`max_total_monosaccharides_num`** `numeric` Defalut: 22
 
-### STE:
+### STEP7:
 
-Match the likely glycan spectrum to glycan lib
+Match the likely glycan spectrum info (STEP5) to the theoretical glycan
+library (STEP6) based on the precursor m/z value and charge state, and
+find the possible glycan composition candidates for each likely glycan
+spectrum.
+
+#### Matching logic
+
+1.  It compares the experimental precursor m/z against the theoretical
+    monoisotopic/second-isotopologue m/z values in the glycan library.
+    The precursor m/z must fall within the user-specified ppm tolerance
+    window (`max_precursor_mz_ppm`).
+
+2.  Check the charge state, a candidate is only considered if its charge
+    state matches the experimental spectrum.
+
+3.  Top n Selection: If multiple candidate compositions satisfy the
+    tolerance criteria, they are ranked by their absolute ppm error. The
+    top n candidates with the smallest ppm differences are retained,
+    where n is defined by `max_possible_candidates_num`.
+
+#### Output
+
+``` text
+likely_glycan_spectrum_matching_result
+```
+
+#### Codes
 
 ``` r
 likely_glycan_spectrum_matching_result = GlycoMsHelper::FindPossibleGlycanComposition(
@@ -869,9 +895,45 @@ likely_glycan_spectrum_matching_result = GlycoMsHelper::FindPossibleGlycanCompos
 # write.csv(likely_glycan_spectrum_matching_result, file = 'your_csv_file_path_and_name.csv')
 ```
 
-### STEP6\_\_\_:
+#### Parameters
+
+- **`spectrum_info`**(`dataframe`) The filtered MS2 spectrum metadata
+  dataframe. Typically retrieved from STEP5,
+  `diagnostic_results$spectrum_info`
+
+- **`glycan_lib`**(`dataframe`) The theoretical glycan library generated
+  in STEP6
+
+- **`max_precursor_mz_ppm`**(`numeric`) Maximum ppm difference between
+  the experimental precursor m/z value and the theoretical
+  monoisotopic/second isotopologue m/z values in the glycan library for
+  matching.
+
+- **`max_possible_candidates_num`**(`numeric`) Maximum number of
+  possible glycan composition candidates to return for each likely
+  glycan spectrum, based on the smallest ppm difference.
+
+### STEP8:
 
 Find the candidate glycan composition based on isotopics distribution
+
+#### Logic
+
+the experimental MS1 isotopic distributiion of each likely glycan MS2
+spectrum is compared against the theoretical isotopic distribution of
+each candidate glycan composition. The comparison is based on the cosine
+similarity score between the experimental and theoretical isotopic
+distributions. The candidate glycan composition with the highest cosine
+similarity score is selected as the most likely composition for each
+likely glycan MS2 spectrum.
+
+#### Output
+
+``` text
+final_glycan_spectrum_matching_result
+```
+
+#### Codes
 
 ``` r
 final_glycan_spectrum_matching_result = GlycoMsHelper::ValidateGlycanCompositionByIsotopePattern(
@@ -888,7 +950,27 @@ final_glycan_spectrum_matching_result = GlycoMsHelper::ValidateGlycanComposition
 # write.csv(final_glycan_spectrum_matching_result, file = 'your_csv_file_path_and_name.csv')
 ```
 
-### STEP\_\_7:
+#### Parameters
+
+- **`spectrum_matching_info`** (`dataframe`) The matching info of each
+  MS2 spectrum, typically retrieved from STEP6
+
+- **`molecular_names`** (`character`) ~~The names of the monosaccharides
+  and adducts in the glycan library~~
+
+- **`molecular_formula_list`** (`list`)
+
+- **`ms_data`** (`MS data`)
+
+- **`ms1_window_left`** (`numeric`)
+
+- **`ms1_window_right`** (`numeric`)
+
+- **`bin_width`** (`numeric`)
+
+- **`threshold_iso_probalility`** (`numeric`)
+
+### STEP9:
 
 ``` r
 ms2_spectrum_similarity_info = GetMS2SpectrumSimilarityScore(ms_data = mass_spectrum_data_filtered, 
