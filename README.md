@@ -1023,7 +1023,9 @@ final_glycan_spectrum_matching_result = GlycoMsHelper::ValidateGlycanComposition
 - **`threshold_iso_probalility`** (`numeric`) The minimum relative
   abundance threshold for theoretical isotopic peaks to be included in
   the comparison. (Refer to the `threshold` parameters in
-  `enviPat::isopattern()` for details). \### STEP9:
+  `enviPat::isopattern()` for details).
+
+### STEP9:
 
 ``` r
 ms2_spectrum_similarity_info = GetMS2SpectrumSimilarityScore(ms_data = mass_spectrum_data_filtered, 

@@ -928,6 +928,8 @@ Bin width used to calculate the cosine similarity score between the experimental
 
 - **`threshold_iso_probalility`** (`numeric`)
 The minimum relative abundance threshold for theoretical isotopic peaks to be included in the comparison. (Refer to the `threshold` parameters in `enviPat::isopattern()` for details).
+
+
 ### STEP9: 
 
 ```{r STEP9, eval = FALSE}
