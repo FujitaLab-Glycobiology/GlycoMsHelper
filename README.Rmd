@@ -866,20 +866,60 @@ final_glycan_spectrum_matching_result = GlycoMsHelper::ValidateGlycanComposition
 
 #### Parameters 
 - **`spectrum_matching_info`** (`dataframe`)
-The matching info of each MS2 spectrum, typically retrieved from STEP6
+The matching info of each MS2 spectrum, typically retrieved from STEP7
 
 - **`molecular_names`** (`character`)
-~~The names of the monosaccharides and adducts in the glycan library~~
+The names of the monosaccharides, adducts, and corresponding label in the glycan library
 
-- **`molecular_formula_list`** (`list`)
+  **Example:**
+  ```r
+  molecular_names = c(Hex, HexNAc, dHex, Neu5Ac, HexA, Neu5Gc, H, Na, K, ProA)
+  ```
+
+- **`molecular_formula_list`** (`named character vector`)
+Molucular formulas for each monosaccharide, adduct, and label in the glycan library. The names of the vector should match the `molecular_names` parameter. For some molecular with only one molecular, like the `ProA = 'C13H23N3O1'`, theere is only one Oxygen atom, so the molecular formula is 'C13H23N3O1' not 'C13H23N3O'.
+
+  **Example:**
+  ```r
+  molecular_formula_list = c(
+    # monosaccharides
+    Hex = 'C6H10O5',
+    HexNAc = 'C8H13N1O5',
+    dHex = 'C6H10O4',
+    Neu5Ac = 'C11H17N1O8',
+    HexA = 'C6H8O6',
+    Neu5Gc = 'C11H17N1O9',
+    Pentose = 'C5H8O4',
+    KDN = 'C9H14O8', 
+    EtNP = 'C2H6N1O3P1', 
+    AHM = 'C6H8O4', 
+    # label
+    ProA = 'C13H23N3O1', 
+    AB = 'C7H10N2O1', 
+    PA = 'C5H8N2', 
+    # adduct
+    H = 'H1',
+    Na = 'Na1',
+    K = 'K1',
+    Li = 'Li1',
+    Mg = 'Mg1'
+    )
+  ```
+
 - **`ms_data`** (`MS data`)
+The MS data before denoising. 
+
 - **`ms1_window_left`** (`numeric`)
+Isolation window left boundary for extracting the MS1 isotopic distribution of each likely glycan MS2 spectrum.
+
 - **`ms1_window_right`** (`numeric`)
+Isolation window right boundary for extracting the MS1 isotopic distribution of each likely glycan MS2 spectrum.
+
 - **`bin_width`** (`numeric`)
+Bin width used to calculate the cosine similarity score between the experimental and theoretical isotopic distributions.
+
 - **`threshold_iso_probalility`** (`numeric`)
-
-
-
+The minimum relative abundance threshold for theoretical isotopic peaks to be included in the comparison. See `threshold` parameters in `enviPat::isopattern()` for more details.
 
 
 ### STEP9: 
