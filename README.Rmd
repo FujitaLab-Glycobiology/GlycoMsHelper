@@ -838,10 +838,17 @@ Maximum number of possible glycan composition candidates to return for each like
 
 
 ### STEP8: 
-Find the candidate glycan composition based on isotopics distribution
+Validate glycan composition based on isotopics distribution
 
 #### Logic
-the experimental MS1 isotopic distributiion of each likely glycan MS2 spectrum is compared against the theoretical isotopic distribution of each candidate glycan composition. The comparison is based on the cosine similarity score between the experimental and theoretical isotopic distributions. The candidate glycan composition with the highest cosine similarity score is selected as the most likely composition for each likely glycan MS2 spectrum. 
+1. Extraction: For each candidate composition mapped in STEP 7, the function extracts the MS1 isolation windows defined by `ms1_window_left` and `ms1_window_right` around the precursor m/z of each likely glycan MS2 spectrum. 
+
+2. Simulation: The theoretical isotopic distribution of each candidate composition is simulated based on its structural molecular formula.
+
+3. Scoring: A cosine similarity score is calculated between the binned experimental and theoretical isotopic envelopes.
+
+4. Selection: The composition with the highest cosine similarity score is selected as the top assignment for that specific MS2 spectrum.
+
 
 #### Output
 ```text
@@ -866,10 +873,10 @@ final_glycan_spectrum_matching_result = GlycoMsHelper::ValidateGlycanComposition
 
 #### Parameters 
 - **`spectrum_matching_info`** (`dataframe`)
-The matching info of each MS2 spectrum, typically retrieved from STEP7
+The candidate matches for each MS2 spectrum, typically retrieved from STEP7
 
 - **`molecular_names`** (`character`)
-The names of the monosaccharides, adducts, and corresponding label in the glycan library
+Names of the monosaccharides, adducts, and corresponding label in the glycan library
 
   **Example:**
   ```r
@@ -877,7 +884,8 @@ The names of the monosaccharides, adducts, and corresponding label in the glycan
   ```
 
 - **`molecular_formula_list`** (`named character vector`)
-Molucular formulas for each monosaccharide, adduct, and label in the glycan library. The names of the vector should match the `molecular_names` parameter. For some molecular with only one molecular, like the `ProA = 'C13H23N3O1'`, theere is only one Oxygen atom, so the molecular formula is 'C13H23N3O1' not 'C13H23N3O'.
+Molecular formulas for every entity declared in `molecular_names`. Vector names must perfectly match `molecular_names`.  
+Note: Elements with a single atom count must explicitly state 1 (e.g., `ProA = 'C13H23N3O1'` instead of `'C13H23N3O'`) to ensure proper parsing downstream.
 
   **Example:**
   ```r
@@ -907,21 +915,19 @@ Molucular formulas for each monosaccharide, adduct, and label in the glycan libr
   ```
 
 - **`ms_data`** (`MS data`)
-The MS data before denoising. 
+The raw or filtered mass spectrometry data prior to any destructive spectrum-denoising steps.
 
 - **`ms1_window_left`** (`numeric`)
-Isolation window left boundary for extracting the MS1 isotopic distribution of each likely glycan MS2 spectrum.
+Isolation window left boundary for extracting the experimental MS1 isotopic distribution of each likely glycan MS2 spectrum.
 
 - **`ms1_window_right`** (`numeric`)
-Isolation window right boundary for extracting the MS1 isotopic distribution of each likely glycan MS2 spectrum.
+Isolation window right boundary for extracting the experimental MS1 isotopic distribution of each likely glycan MS2 spectrum.
 
 - **`bin_width`** (`numeric`)
 Bin width used to calculate the cosine similarity score between the experimental and theoretical isotopic distributions.
 
 - **`threshold_iso_probalility`** (`numeric`)
-The minimum relative abundance threshold for theoretical isotopic peaks to be included in the comparison. See `threshold` parameters in `enviPat::isopattern()` for more details.
-
-
+The minimum relative abundance threshold for theoretical isotopic peaks to be included in the comparison. (Refer to the `threshold` parameters in `enviPat::isopattern()` for details).
 ### STEP9: 
 
 ```{r STEP9, eval = FALSE}
