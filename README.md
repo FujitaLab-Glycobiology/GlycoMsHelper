@@ -532,9 +532,9 @@ extracts the MS1 spectra corresponding to the filtered MS2 spectra.
 #### Filtering logic
 
 Extracts MS2 spectra that satisfy the user-defined logical expression
-within the specified ppm tolerance, and then retrieves the preceding MS1
-spectrum with the smallest retention time difference relative to each
-filtered MS2 spectrum.
+within the specified mass error tolerance, and then retrieves the
+preceding MS1 spectrum with the smallest retention time difference
+relative to each filtered MS2 spectrum.
 
 #### Output
 
@@ -569,7 +569,8 @@ diagnostic_results = GlycoMsHelper::FindSpectrumByDiagnosticFragments(
   ms_data_raw = mass_spectrum_data_filtered, 
   diagnostic_frags_list = diagnostic_frags, 
   diagnostic_frags_exp = 'HexNAc & (HexNAc_ProA | dHex_HexNAc_ProA) & !Hex_HexNAc_ProA', 
-  ppm_val = 100
+  mass_error_tolerance_type = 'ppm_tolerance', 
+  mass_error_tolerance_val = 100
   )
 
 # export(diagnostic_results$selected_ms_data,
@@ -606,6 +607,11 @@ likely_glycan_spectrum_info = diagnostic_results$spectrum_info
 
 - **`ppm_val`** The ppm tolerance for matching the diagnostic ions
   signal in the MS2 spectra.
+
+- **`mass_error_tolerance_type`** Define the mass error type, can
+  specify either `ppm_tolerance` or `absolute_tolerance` (Da).
+
+- **`mass_error_tolerance_val`** Define the mass error value
 
 ### STEP6:
 
@@ -865,16 +871,16 @@ spectrum.
 
 1.  It compares the experimental precursor m/z against the theoretical
     monoisotopic/second-isotopologue m/z values in the glycan library.
-    The precursor m/z must fall within the user-specified ppm tolerance
-    window (`max_precursor_mz_ppm`).
+    The precursor m/z must fall within the user-specified mass tolerance
+    window (`precursor_mass_error_tolerance_val`).
 
 2.  Check the charge state, a candidate is only considered if its charge
     state matches the experimental spectrum.
 
 3.  Top n Selection: If multiple candidate compositions satisfy the
-    tolerance criteria, they are ranked by their absolute ppm error. The
-    top n candidates with the smallest ppm differences are retained,
-    where n is defined by `max_possible_candidates_num`.
+    tolerance criteria, they are ranked by their absolute mass error.
+    The top n candidates with the smallest mass differences are
+    retained, where n is defined by `max_possible_candidates_num`.
 
 #### Output
 
@@ -888,7 +894,8 @@ likely_glycan_spectrum_matching_result
 likely_glycan_spectrum_matching_result = GlycoMsHelper::FindPossibleGlycanComposition(
   spectrum_info = likely_glycan_spectrum_info, 
   glycan_lib = N_glycan_library, 
-  max_precursor_mz_ppm = 150, 
+  precursor_mass_error_tolerance_type = "ppm_tolerance",
+  precursor_mass_error_tolerance_val = 150, 
   max_possible_candidates_num = 5
   )
 
@@ -908,6 +915,14 @@ likely_glycan_spectrum_matching_result = GlycoMsHelper::FindPossibleGlycanCompos
   the experimental precursor m/z value and the theoretical
   monoisotopic/second isotopologue m/z values in the glycan library for
   matching.
+
+- **`precursor_mass_error_tolerance_type`**(`character`) `ppm_tolerance`
+  or `abs_tolerance` (Da), define the mass error type for matching the
+  experimental precursor m/z value to the theoretical
+  monoisotopic/second isotopologue m/z values in the glycan library.
+
+- **`precursor_mass_error_tolerance_val`**(`numeric`) Define the mass
+  error value
 
 - **`max_possible_candidates_num`**(`numeric`) Maximum number of
   possible glycan composition candidates to return for each likely

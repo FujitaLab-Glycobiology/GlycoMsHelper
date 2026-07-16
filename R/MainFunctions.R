@@ -1861,7 +1861,12 @@ diagnostic_frags_list_default = c(HexNAc =         204.08667,   # HexNAc
 #' @param diagnostic_frags_exp A character string representing a logical expression.
 #'   Names in this expression must match the names in \code{diagnostic_frags_list}.
 #'   Example: \code{"HexNAc & (HexNAc_ProA | dHex_HexNAc_ProA) & !Hex_HexNAc_ProA"}.
-#' @param ppm_val Numeric. The mass tolerance in parts-per-million (ppm) for matching fragments.
+#' @param mass_error_tolerance_type Character string. Specifies the type of mass error tolerance to use.
+#'    Either the \code{'ppm_tolerance'} or \code{'absolute_tolerance'}.
+#' @param mass_error_tolerance_val Numeric.
+#'    The value of the mass error tolerance.
+#'    If \code{precursor_mass_error_tolerance_type} is \code{'ppm_tolerance'}, this value is in ppm.
+#'    If it is \code{'absolute_tolerance'}, this value is in Daltons (Da).
 #'
 #' @details
 #' The function evaluates the \code{diagnostic_frags_exp} by checking the presence of each
@@ -1901,7 +1906,7 @@ diagnostic_frags_list_default = c(HexNAc =         204.08667,   # HexNAc
 #' print(result$spectrum_info$ms2_spectrum_id)
 #' }
 FindSpectrumByDiagnosticFragments = function(ms_data, ms_data_raw, diagnostic_frags_list = diagnostic_frags_list_default,
-                                          diagnostic_frags_exp, ppm_val) {
+                                          diagnostic_frags_exp, mass_error_tolerance_type, mass_error_tolerance_val) {
 
   spectra_data_ms1 = Spectra::filterMsLevel(ms_data, 1)
   spectra_data_ms2 = Spectra::filterMsLevel(ms_data, 2)
@@ -1926,12 +1931,35 @@ FindSpectrumByDiagnosticFragments = function(ms_data, ms_data_raw, diagnostic_fr
 
     ms2_id = spectra_data_ms2$spectrumId[i]
 
-    presence_map <- sapply(
-      names(diagnostic_frags_list), function(name) {
-        target_mz <- diagnostic_frags_list[[name]]
-        any(abs((mz_values - target_mz) / target_mz) * 10^6 <= ppm_val)
-      }
-    )
+
+    if (mass_error_tolerance_type == "ppm_tolerance") {
+
+      presence_map <- sapply(
+        names(diagnostic_frags_list), function(name) {
+          target_mz <- diagnostic_frags_list[[name]]
+          any(abs((mz_values - target_mz) / target_mz) * 10^6 <= mass_error_tolerance_val)
+        }
+      )
+
+    } else if (mass_error_tolerance_type == "absolute_tolerance") {
+
+      presence_map <- sapply(
+        names(diagnostic_frags_list), function(name) {
+          target_mz <- diagnostic_frags_list[[name]]
+          any(abs(mz_values - target_mz) <= mass_error_tolerance_val)
+        }
+      )
+
+    } else {
+      stop("Invalid mass_error_tolerance_type. Use 'ppm_tolerance' or 'absolute_tolerance'.")
+    }
+
+    # presence_map <- sapply(
+    #   names(diagnostic_frags_list), function(name) {
+    #     target_mz <- diagnostic_frags_list[[name]]
+    #     any(abs((mz_values - target_mz) / target_mz) * 10^6 <= ppm_val)
+    #   }
+    # )
 
     is_match = base::eval(parse(text = diagnostic_frags_exp), envir = as.list(presence_map))
 
@@ -2048,8 +2076,12 @@ max_possible_candidates_num_default = 5
 #'   Usually the output from \code{FindSpectrumByDiagnosticFragments}.
 #' @param glycan_lib A data frame acting as the reference glycan library. It must contain
 #'   at least: \code{total_charge}, \code{glycan_monoisotopic_mz}, and composition details.
-#' @param max_precursor_mz_ppm Numeric. The maximum allowable mass tolerance in ppm
-#'   between the observed precursor and the library entry. Default is 150.
+#' @param precursor_mass_error_tolerance_type Character string. Specifies the type of mass error tolerance to use.
+#'    Either the \code{'ppm_tolerance'} or \code{'absolute_tolerance'}.
+#' @param precursor_mass_error_tolerance_val Numeric.
+#'    The value of the mass error tolerance.
+#'    If \code{precursor_mass_error_tolerance_type} is \code{'ppm_tolerance'}, this value is in ppm.
+#'    If it is \code{'absolute_tolerance'}, this value is in Daltons (Da).
 #' @param max_possible_candidates_num Numeric. The maximum number of top-ranked
 #'   (by lowest ppm error) candidates to return for each MS2 spectrum. Default is 5.
 #'
@@ -2081,7 +2113,9 @@ max_possible_candidates_num_default = 5
 #' head(candidates)
 #' }
 FindPossibleGlycanComposition = function(spectrum_info, glycan_lib,
-                                         max_precursor_mz_ppm = precursor_mz_ppm_default,
+                                         #max_precursor_mz_ppm = precursor_mz_ppm_default,
+                                         precursor_mass_error_tolerance_type,
+                                         precursor_mass_error_tolerance_val = precursor_mz_ppm_default,
                                          max_possible_candidates_num = max_possible_candidates_num_default) {
 
   required_cols = c("ms1_spectrum_id", "ms1_retention_time", "ms2_spectrum_id",
@@ -2107,11 +2141,28 @@ FindPossibleGlycanComposition = function(spectrum_info, glycan_lib,
     precursor_charge = all_precursor_charge[i]
     precursor_ms2_id = all_ms2_id[i]
 
-    all_possible_glycan_comp = glycan_lib |>
-      dplyr::filter(total_charge == precursor_charge) |>
-      dplyr::mutate(ppm_error = abs(glycan_monoisotopic_mz - precursor_mz) / glycan_monoisotopic_mz * 1e6) |>
-      dplyr::filter(ppm_error <= max_precursor_mz_ppm) |>
-      dplyr::arrange(ppm_error)
+
+    if (precursor_mass_error_tolerance_type == "ppm_tolerance") {
+
+      all_possible_glycan_comp = glycan_lib |>
+        dplyr::filter(total_charge == precursor_charge) |>
+        dplyr::mutate(mass_error = abs(glycan_monoisotopic_mz - precursor_mz) / glycan_monoisotopic_mz * 1e6) |>
+        dplyr::filter(mass_error <= precursor_mass_error_tolerance_val) |>
+        dplyr::arrange(mass_error)
+
+    } else if (precursor_mass_error_tolerance_type == "absolute_tolerance") {
+
+      all_possible_glycan_comp = glycan_lib |>
+        dplyr::filter(total_charge == precursor_charge) |>
+        dplyr::mutate(mass_error = abs(glycan_monoisotopic_mz - precursor_mz)) |>
+        dplyr::filter(mass_error <= precursor_mass_error_tolerance_val) |>
+        dplyr::arrange(mass_error)
+
+    } else {
+      stop("Invalid 'precursor_mass_error_tolerance_type'. Use 'ppm_tolerance' or 'absolute_tolerance'.")
+    }
+
+
 
 
     # if (dim(all_possible_glycan_comp)[1] >= max_possible_candidates_num) {

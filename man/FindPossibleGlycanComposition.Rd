@@ -7,7 +7,8 @@
 FindPossibleGlycanComposition(
   spectrum_info,
   glycan_lib,
-  max_precursor_mz_ppm = precursor_mz_ppm_default,
+  precursor_mass_error_tolerance_type,
+  precursor_mass_error_tolerance_val = precursor_mz_ppm_default,
   max_possible_candidates_num = max_possible_candidates_num_default
 )
 }
@@ -19,8 +20,13 @@ Usually the output from \code{FindSpectrumByDiagnosticFragments}.}
 \item{glycan_lib}{A data frame acting as the reference glycan library. It must contain
 at least: \code{total_charge}, \code{glycan_monoisotopic_mz}, and composition details.}
 
-\item{max_precursor_mz_ppm}{Numeric. The maximum allowable mass tolerance in ppm
-between the observed precursor and the library entry. Default is 150.}
+\item{precursor_mass_error_tolerance_type}{Character string. Specifies the type of mass error tolerance to use.
+Either the \code{'ppm_tolerance'} or \code{'absolute_tolerance'}.}
+
+\item{precursor_mass_error_tolerance_val}{Numeric.
+The value of the mass error tolerance.
+If \code{precursor_mass_error_tolerance_type} is \code{'ppm_tolerance'}, this value is in ppm.
+If it is \code{'absolute_tolerance'}, this value is in Daltons (Da).}
 
 \item{max_possible_candidates_num}{Numeric. The maximum number of top-ranked
 (by lowest ppm error) candidates to return for each MS2 spectrum. Default is 5.}

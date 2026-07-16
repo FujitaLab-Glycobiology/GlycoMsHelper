@@ -8,7 +8,7 @@ GetMS2SpectrumSimilarityScore(
   ms_data,
   spectrum_matching_result,
   glycan_composition_str,
-  adduct_type = adduct_type_default,
+  adduct_type = adduct_type_similarity_default,
   bin_width,
   ms2_range_start,
   ms2_range_end

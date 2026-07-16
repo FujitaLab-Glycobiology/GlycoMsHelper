@@ -9,7 +9,8 @@ FindSpectrumByDiagnosticFragments(
   ms_data_raw,
   diagnostic_frags_list = diagnostic_frags_list_default,
   diagnostic_frags_exp,
-  ppm_val
+  mass_error_tolerance_type,
+  mass_error_tolerance_val
 )
 }
 \arguments{
@@ -24,7 +25,13 @@ Defaults to \code{diagnostic_frags_list_default}.}
 Names in this expression must match the names in \code{diagnostic_frags_list}.
 Example: \code{"HexNAc & (HexNAc_ProA | dHex_HexNAc_ProA) & !Hex_HexNAc_ProA"}.}
 
-\item{ppm_val}{Numeric. The mass tolerance in parts-per-million (ppm) for matching fragments.}
+\item{mass_error_tolerance_type}{Character string. Specifies the type of mass error tolerance to use.
+Either the \code{'ppm_tolerance'} or \code{'absolute_tolerance'}.}
+
+\item{mass_error_tolerance_val}{Numeric.
+The value of the mass error tolerance.
+If \code{precursor_mass_error_tolerance_type} is \code{'ppm_tolerance'}, this value is in ppm.
+If it is \code{'absolute_tolerance'}, this value is in Daltons (Da).}
 }
 \value{
 A list containing:
