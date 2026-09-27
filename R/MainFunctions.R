@@ -2135,7 +2135,7 @@ FindPossibleGlycanComposition = function(spectrum_info, glycan_lib,
   # initialize the possible_glycan_list
   possible_glycan_list = list()
 
-  for (i in seq_along(1:length_spectrum_info)) {
+  for (i in seq_len(length_spectrum_info)) {
 
     precursor_mz = all_precursor_mz[i]
     precursor_charge = all_precursor_charge[i]
@@ -2193,15 +2193,18 @@ FindPossibleGlycanComposition = function(spectrum_info, glycan_lib,
       message(paste0("No candidates found for MS2 ID: ", precursor_ms2_id))
     }
 
-
-
-
-
   }
 
-  candidate_glycan_list = dplyr::bind_rows(possible_glycan_list) |>
-    dplyr::left_join(spectrum_info, by = c('ms2_spectrum_id' = 'ms2_spectrum_id'))
+  candidate_glycan_list = dplyr::bind_rows(possible_glycan_list)
 
+  if (nrow(candidate_glycan_list) == 0) {
+    stop(
+      "No candidate glycans found. Check input data, precursor charges, glycan library, and mass error tolerance.",
+      call. = FALSE
+    )
+  }
+
+  candidate_glycan_list = dplyr::left_join(candidate_glycan_list, spectrum_info, by = c('ms2_spectrum_id' = 'ms2_spectrum_id'))
 
   return(candidate_glycan_composition = candidate_glycan_list)
 
