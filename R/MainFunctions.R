@@ -1691,6 +1691,16 @@ MS2SpectrumDenoising = function(ms_data,
 
     if (ms2_denoising_method == 'spline_segmentation_regression') {
 
+        min_required = ms2_denoising_detail[[ms2_denoising_method]]$top_n_to_remove + 4L
+        n_available = length(sort(current_ms2_peaks_data_distinct$intensity))
+        
+        if (n_available < min_required) {
+          message(
+            "Skipping denoising for MS2 ID: ", 
+            all_ms2_spectra_id[i], " (", n_available, " distinct intensities; ", min_required, " required).")
+          next
+        }
+
       denoising_info = GetSplineSegmentationNoise(denoising_detail = ms2_denoising_detail,
                                                   denoising_method = ms2_denoising_method,
                                                   transform_fun = ms2_spectrum_transform_fun,
@@ -1703,6 +1713,16 @@ MS2SpectrumDenoising = function(ms_data,
       new_row_spectrum_info = denoising_info$row_regression_info
 
       } else if (ms2_denoising_method == 'spline_regression') {
+
+        min_required = ms2_denoising_detail[[ms2_denoising_method]]$top_n_to_remove + 4L
+        n_available = length(sort(current_ms2_peaks_data_distinct$intensity))
+
+        if (n_available < min_required) {
+          message(
+            "Skipping spline denoising for MS2 ID: ", 
+            all_ms2_spectra_id[i], " (", n_available, " distinct intensities; ", min_required, " required).")
+          next
+        }
 
         denoising_info = GetSplineNoise(denoising_detail = ms2_denoising_detail,
                                                     denoising_method = ms2_denoising_method,
